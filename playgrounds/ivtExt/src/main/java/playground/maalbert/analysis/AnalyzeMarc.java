@@ -30,14 +30,13 @@ public class AnalyzeMarc {
     }
 
     static void saveFile(Tensor table, String name) throws Exception {
-        //DEBUG START
         String folderName = "data4Matlab/";
         File directory = new File(folderName);
         if (! directory.exists()){
             directory.mkdir();
         }
         Files.write(Paths.get(folderName + name + ".csv"), (Iterable<String>) CsvFormat.of(table)::iterator);
-        //DEBUG END
+
 
 //        //Old version Start
 //       Files.write(Paths.get("output/data/" + name + ".csv"), (Iterable<String>) CsvFormat.of(table)::iterator);

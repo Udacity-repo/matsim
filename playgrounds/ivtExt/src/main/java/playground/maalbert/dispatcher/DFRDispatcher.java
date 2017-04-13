@@ -248,8 +248,7 @@ public class DFRDispatcher extends PartitionedDispatcher {
                         double diff_rest    = rebalancingOrderRest.Get(indexFrom, indexTo).number().doubleValue() -//
                                                 rebalancingOrderRest.Get(indexTo, indexFrom).number().doubleValue();
 
-                        //if (Total.of(inConsensus).Get().number().intValue() != N_vStations){
-                        if (true){
+                        if (Total.of(inConsensus).Get().number().intValue() != N_vStations){
                             switch (feebackTerm) {
                                 case LDX: {
                                     double lambdaFrom = lambda.Get(indexFrom).number().doubleValue();
