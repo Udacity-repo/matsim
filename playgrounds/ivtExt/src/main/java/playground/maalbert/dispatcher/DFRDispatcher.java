@@ -135,11 +135,11 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 //------------------------------------------------------------------------------------------------------
                 // Get System State
                 Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
-                Map<VirtualNode, Set<AVVehicle>> v_ij_reb                  = getVirtualNodeRebalancingToVehicles();
+                Map<VirtualNode, Set<AVVehicle>> v_ij_reb = getVirtualNodeRebalancingToVehicles();
                 //Declare System State Matrices
-                Tensor rebalancingTovStation    = Array.zeros(N_vStations);
-                Tensor openRequests             = Array.zeros(N_vStations);
-                Tensor availableVehicles        = Array.zeros(N_vStations);
+                Tensor rebalancingTovStation = Array.zeros(N_vStations);
+                Tensor openRequests = Array.zeros(N_vStations);
+                Tensor availableVehicles = Array.zeros(N_vStations);
                 Tensor feedback_Rebalancing_DFR = Array.zeros(N_vStations, N_vStations);
                 Tensor feedfwrd_Rebalancing_LPR = Array.zeros(N_vStations, N_vStations);
                 //Initialize System State Matrices
@@ -154,16 +154,16 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 // System Wait Times
                 //------------------------------------------------------------------------------------------------------
                 Tensor waitTimes = Tensors.empty();
-                for (int i=0;i<N_vStations;i++){
+                for (int i = 0; i < N_vStations; i++) {
                     VirtualNode vStation = virtualNetwork.getVirtualNode(i);
-                    Tensor waitTimes_i = Tensor.of(requests.get(vStation).stream().map(r-> RealScalar.of(now-r.getSubmissionTime())));
-                    if (waitTimes_i.length()<1){
+                    Tensor waitTimes_i = Tensor.of(requests.get(vStation).stream().map(r -> RealScalar.of(now - r.getSubmissionTime())));
+                    if (waitTimes_i.length() < 1) {
                         waitTimes.append(RealScalar.of(0));
-                    }else {
+                    } else {
                         waitTimes.append(Mean.of(waitTimes_i));
                     }
                 }
-                waitTimes = waitTimes.multiply(RealScalar.of(1/60.0)); //Wait Times in Minutes
+                waitTimes = waitTimes.multiply(RealScalar.of(1 / 60.0)); //Wait Times in Minutes
                 //DEBUG START
                 System.out.println("--------------------------------------------------------------------");
                 System.out.println("Available Vehicles: " + availableVehicles.toString());
@@ -190,34 +190,34 @@ public class DFRDispatcher extends PartitionedDispatcher {
                     // Check if in Consensus Set
                     //--------------------------------------------------------------------------------------------------
                     Tensor lambda = Tensors.empty();
-                        switch (feebackTerm){
-                            case LDX :{
-                                lambda = arrivalInformation.getNextNonZeroLambdaforTime((int) now);
-                                GlobalAssert.that(Total.of(lambda).Get().number().doubleValue() != 0); // no lambda is ever zero (if zero take next non-zero)
-                                consensusVal = consensusLDX(systemImbalance, lambda);
-                                consensusVal.append(RealScalar.of(0)); //LeftoverStation
+                    switch (feebackTerm) {
+                        case LDX: {
+                            lambda = arrivalInformation.getNextNonZeroLambdaforTime((int) now);
+                            GlobalAssert.that(Total.of(lambda).Get().number().doubleValue() != 0); // no lambda is ever zero (if zero take next non-zero)
+                            consensusVal = consensusLDX(systemImbalance, lambda);
+                            consensusVal.append(RealScalar.of(0)); //LeftoverStation
                             break;
-                            }
-                            case LX:{
-                                consensusVal = consensusLX(systemImbalance);
+                        }
+                        case LX: {
+                            consensusVal = consensusLX(systemImbalance);
                             break;
-                            }
-                            case LW: {
-                                consensusVal = consensusLX(waitTimes);
-                                break;
-                            }
                         }
-                        Tensor lowerConsensusValue = systemImbalance.subtract(Floor.of(consensusVal));
-                        Tensor upperConsensusValue = systemImbalance.subtract(Ceiling.of(consensusVal));
-                        for (int i=0;i<N_vStations;i++){
-                            boolean aboveConsSet_LB = lowerConsensusValue.Get(i).number().doubleValue() >= - neighCount.Get(i).number().doubleValue();
-                            boolean belowConsSet_UB = upperConsensusValue.Get(i).number().doubleValue() <=   neighCount.Get(i).number().doubleValue();
-                            if (aboveConsSet_LB && belowConsSet_UB){
-                                inConsensus.set(RealScalar.of(1),i);
-                            }else{
-                                inConsensus.set(RealScalar.of(0),i);
-                            }
+                        case LW: {
+                            consensusVal = consensusLX(waitTimes);
+                            break;
                         }
+                    }
+                    Tensor lowerConsensusValue = systemImbalance.subtract(Floor.of(consensusVal));
+                    Tensor upperConsensusValue = systemImbalance.subtract(Ceiling.of(consensusVal));
+                    for (int i = 0; i < N_vStations; i++) {
+                        boolean aboveConsSet_LB = lowerConsensusValue.Get(i).number().doubleValue() >= -neighCount.Get(i).number().doubleValue();
+                        boolean belowConsSet_UB = upperConsensusValue.Get(i).number().doubleValue() <= neighCount.Get(i).number().doubleValue();
+                        if (aboveConsSet_LB && belowConsSet_UB) {
+                            inConsensus.set(RealScalar.of(1), i);
+                        } else {
+                            inConsensus.set(RealScalar.of(0), i);
+                        }
+                    }
                     //==================================================================================================
                     // Compute Feedback Rebalancing
                     //==================================================================================================
@@ -228,57 +228,54 @@ public class DFRDispatcher extends PartitionedDispatcher {
                         //Get vLink info: weight and nodes
                         VirtualLink vLink = entry.getKey();
                         double linkWeight = entry.getValue();
-                        int indexFrom     = vLink.getFrom().getIndex();
-                        int indexTo       = vLink.getTo().getIndex();
+                        int indexFrom = vLink.getFrom().getIndex();
+                        int indexTo = vLink.getTo().getIndex();
                         //Get Imbalance
                         double imbalanceFrom = systemImbalance.Get(indexFrom).number().doubleValue(); //potentially leave as scalar
-                        double imbalanceTo   = systemImbalance.Get(indexTo).number().doubleValue();
+                        double imbalanceTo = systemImbalance.Get(indexTo).number().doubleValue();
                         // compute the rebalancing vehicles
                         double rebalance_From_To = 0.0;
                         // Get Wait Times
                         double waitTimesFrom = waitTimes.Get(indexFrom).number().doubleValue();
-                        double waitTimesTo   = waitTimes.Get(indexTo).number().doubleValue();
+                        double waitTimesTo = waitTimes.Get(indexTo).number().doubleValue();
                         //----------------------------------------------------------------------------------------------
                         // Feedback Rebalancing Term (do onyl if not in consensus Set, else FF solution)
                         //----------------------------------------------------------------------------------------------
 
-                        double diff_alphaij = feedfwrd_Rebalancing_LPR.Get(indexFrom, indexTo).number().doubleValue() - //
-                                                feedfwrd_Rebalancing_LPR.Get(indexTo, indexFrom).number().doubleValue();
+//                        double diff_alphaij = feedfwrd_Rebalancing_LPR.Get(indexFrom, indexTo).number().doubleValue() - //
+//                                                feedfwrd_Rebalancing_LPR.Get(indexTo, indexFrom).number().doubleValue();
+//
+//                        double diff_rest    = rebalancingOrderRest.Get(indexFrom, indexTo).number().doubleValue() -//
+//                                                rebalancingOrderRest.Get(indexTo, indexFrom).number().doubleValue();
 
-                        double diff_rest    = rebalancingOrderRest.Get(indexFrom, indexTo).number().doubleValue() -//
-                                                rebalancingOrderRest.Get(indexTo, indexFrom).number().doubleValue();
-
-                        if (Total.of(inConsensus).Get().number().intValue() != N_vStations){
+                        if (Total.of(inConsensus).Get().number().intValue() != N_vStations) {
                             switch (feebackTerm) {
                                 case LDX: {
                                     double lambdaFrom = lambda.Get(indexFrom).number().doubleValue();
                                     double lambdaTo = lambda.Get(indexTo).number().doubleValue();
-                                    rebalance_From_To = rebalancingPeriod * (diff_alphaij + //
-                                                            (double) popSize * linkWeight * //
-                                                                (imbalanceTo / lambdaTo -  imbalanceFrom / lambdaFrom)) + //
-                                                                    diff_rest;
+                                    rebalance_From_To = rebalancingPeriod * (//
+                                            (double) popSize * linkWeight * //
+                                                    (imbalanceTo / lambdaTo - imbalanceFrom / lambdaFrom));
                                     break;
                                 }
-                                case LW:{
-                                    rebalance_From_To = rebalancingPeriod * (diff_alphaij + //
-                                            linkWeight * (waitTimesTo - waitTimesFrom)) + //
-                                            diff_rest;
+                                case LW: {
+                                    rebalance_From_To = rebalancingPeriod * ( //
+                                            linkWeight * (waitTimesTo - waitTimesFrom));
+
                                     break;
 
                                 }
                                 case LX: {
-                                    rebalance_From_To = rebalancingPeriod * (diff_alphaij + //
-                                                         linkWeight * (imbalanceTo - imbalanceFrom)) + //
-                                                            diff_rest;
+                                    rebalance_From_To = rebalancingPeriod * (//
+                                            linkWeight * (imbalanceTo - imbalanceFrom));
+
                                     break;
                                 }
                                 case FFonly: {
-                                    rebalance_From_To = rebalancingPeriod * diff_alphaij + diff_rest;
+                                    //Do Nothing (can be set to default)
                                     break;
                                 }
                             }
-                        }else{
-                            rebalance_From_To = rebalancingPeriod * diff_alphaij + diff_rest;
                         }
                         //Update feedback_Rebalance tensor
                         if (rebalance_From_To > 0) {
@@ -296,8 +293,10 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 // Quantize Total Rebalancing //TODO Test against floor!!
                 //======================================================================================================
 //                    Tensor rebalancingOrder = Round.of(feedback_Rebalancing_DFR);
-                Tensor rebalancingOrder = Floor.of(feedback_Rebalancing_DFR);
-                    rebalancingOrderRest = feedback_Rebalancing_DFR.subtract(rebalancingOrder);
+                Tensor feedfwrdRebalancingDFR = feedfwrd_Rebalancing_LPR.multiply(RealScalar.of(rebalancingPeriod));
+                Tensor feedbackRebalancingDFR = feedback_Rebalancing_DFR.add(feedfwrdRebalancingDFR).add(rebalancingOrderRest);
+                Tensor rebalancingOrder = Floor.of(feedbackRebalancingDFR);
+                    rebalancingOrderRest = feedbackRebalancingDFR.subtract(rebalancingOrder);
 
 //                //DEBUG START
 //                System.out.println("Rebalancing Tensor:\n" + Pretty.of(rebalancingOrder));
