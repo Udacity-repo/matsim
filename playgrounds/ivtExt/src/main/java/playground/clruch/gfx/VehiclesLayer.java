@@ -45,6 +45,7 @@ public class VehiclesLayer extends ViewerLayer {
 
         int zoom = matsimMapComponent.getZoom();
         int carwidth = (int) Math.max(zoom <= 12 ? 2 : 3, Math.round(5 / matsimMapComponent.getMeterPerPixel()));
+        carwidth *= 2; // TODO
         int car_half = carwidth / 2;
         Map<Integer, List<VehicleContainer>> map = //
                 ref.vehicles.stream().collect(Collectors.groupingBy(VehicleContainer::getLinkId));
@@ -58,8 +59,10 @@ public class VehiclesLayer extends ViewerLayer {
                 for (VehicleContainer vc : entry.getValue()) {
                     Point p1 = matsimMapComponent.getMapPosition(osmLink.getAt(ofs));
                     if (p1 != null) {
+                        // TODO just preliminary tool for visualization
+                        AvStatusColor avStatusColors2 = vc.vehicleIndex >= 50 ? avStatusColors : AvStatusColor.Alternative;
                         if (showLocation) {
-                            Color color = avStatusColors.of(vc.avStatus);
+                            Color color = avStatusColors2.of(vc.avStatus);
                             graphics.setColor(color);
                             graphics.fillRect(p1.x - car_half, p1.y - car_half, carwidth, carwidth);
                         }
@@ -67,7 +70,7 @@ public class VehiclesLayer extends ViewerLayer {
                                 bits.get(vc.avStatus.ordinal())) {
                             OsmLink toOsmLink = matsimMapComponent.db.getOsmLink(vc.destinationLinkIndex);
                             Point p2 = matsimMapComponent.getMapPositionAlways(toOsmLink.getAt(0.5));
-                            Color col = avStatusColors.ofDest(vc.avStatus);
+                            Color col = avStatusColors2.ofDest(vc.avStatus);
                             graphics.setColor(col);
                             graphics.drawLine(p1.x, p1.y, p2.x, p2.y);
                         }

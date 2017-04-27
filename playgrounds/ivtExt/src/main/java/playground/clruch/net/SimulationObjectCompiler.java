@@ -101,6 +101,7 @@ public class SimulationObjectCompiler {
     public SimulationObject compile(Collection<VehicleLinkPair> divertableVehicles, Map<AVVehicle, Link> vehicleLocations) {
         addDivertableVehicles(divertableVehicles, vehicleLocations);
         simulationObject.vehicles = vehicleMap.values().stream().collect(Collectors.toList());
+//        simulationObject.vehicles
         return simulationObject;
     }
 }

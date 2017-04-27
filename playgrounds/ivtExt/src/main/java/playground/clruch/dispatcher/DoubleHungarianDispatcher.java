@@ -1,8 +1,6 @@
 package playground.clruch.dispatcher;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.matsim.api.core.v01.network.Network;
@@ -19,6 +17,7 @@ import playground.clruch.dispatcher.core.VehicleLinkPair;
 import playground.clruch.dispatcher.utils.AbstractRequestSelector;
 import playground.clruch.dispatcher.utils.InOrderOfArrivalMatcher;
 import playground.clruch.dispatcher.utils.OldestRequestSelector;
+import playground.clruch.net.VehicleIntegerDatabase;
 import playground.clruch.utils.SafeConfig;
 import playground.sebhoerl.avtaxi.config.AVDispatcherConfig;
 import playground.sebhoerl.avtaxi.config.AVGeneratorConfig;
@@ -34,7 +33,7 @@ public class DoubleHungarianDispatcher extends UniversalDispatcher {
     private final int maxMatchNumber; // implementation may not use this
     private Tensor printVals = Tensors.empty();
 
-    Map<AVVehicle, Integer> vehicleIdMap = new HashMap<>();
+    VehicleIntegerDatabase vehicleIntegerDatabase = new VehicleIntegerDatabase();
 
     private DoubleHungarianDispatcher( //
             AVDispatcherConfig avDispatcherConfig, //
@@ -45,12 +44,13 @@ public class DoubleHungarianDispatcher extends UniversalDispatcher {
         super(avDispatcherConfig, travelTime, parallelLeastCostPathCalculator, eventsManager);
         SafeConfig safeConfig = SafeConfig.wrap(avDispatcherConfig);
         dispatchPeriod = safeConfig.getInteger("dispatchPeriod", 10);
-        firstGroupSize = safeConfig.getInteger("firstGroupSize", 50); // TODO read from file!
+        // TODO read from file! make fail if not present
+        firstGroupSize = safeConfig.getInteger("firstGroupSize", 50);
         maxMatchNumber = safeConfig.getInteger("maxMatchNumber", Integer.MAX_VALUE);
     }
 
     int getVehicleIndex(AVVehicle avVehicle) {
-        return vehicleIdMap.get(avVehicle); // map must contain vehicle
+        return vehicleIntegerDatabase.getId(avVehicle); // map must contain vehicle
     }
 
     Collection<VehicleLinkPair> supplier1() {
@@ -67,6 +67,10 @@ public class DoubleHungarianDispatcher extends UniversalDispatcher {
 
     @Override
     public void redispatch(double now) {
+
+        for (AVVehicle avVehicle : getMaintainedVehicles())
+            vehicleIntegerDatabase.getId(avVehicle);
+
         final long round_now = Math.round(now);
 
         new InOrderOfArrivalMatcher(this::setAcceptRequest) //
@@ -79,7 +83,6 @@ public class DoubleHungarianDispatcher extends UniversalDispatcher {
 
             Tensor pv1 = HungarianUtils.globalBipartiteMatching(this, () -> supplier1());
             Tensor pv2 = HungarianUtils.globalBipartiteMatching(this, () -> supplier2());
-
             printVals = Tensors.of(pv1, pv2);
         }
     }

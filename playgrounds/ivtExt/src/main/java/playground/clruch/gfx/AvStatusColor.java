@@ -11,10 +11,15 @@ public enum AvStatusColor {
             new Color(0, 153, 255), // rebalance
             new Color(0, 204, 0)), // stay
     Mild( //
-            new Color(128, 0, 128), //
-            new Color(255, 51, 0), //
-            new Color(0, 153, 255), //
-            new Color(128, 128, 128, 64)), //
+            new Color(128, 0, 128), // with customer
+            new Color(255, 51, 0), // to customer
+            new Color(0, 153, 255), // rebalance
+            new Color(128, 128, 128, 64)), // stay
+    Alternative( //
+            new Color(128, 0, 255), // with customer
+            new Color(255, 51, 255), // to customer
+            new Color(0, 153, 255), // rebalance
+            new Color(191, 244, 66)), // stay
     ;
 
     private final Color[] colors;

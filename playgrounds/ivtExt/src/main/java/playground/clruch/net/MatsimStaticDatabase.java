@@ -59,7 +59,7 @@ public class MatsimStaticDatabase {
     private final List<OsmLink> list;
 
     private final IdIntegerDatabase requestIdIntegerDatabase = new IdIntegerDatabase();
-    private final IdIntegerDatabase vehicleIdIntegerDatabase = new IdIntegerDatabase();
+    private final VehicleIntegerDatabase vehicleIdIntegerDatabase = new VehicleIntegerDatabase();
 
     private Integer iteration;
 
@@ -109,7 +109,7 @@ public class MatsimStaticDatabase {
     }
 
     public int getVehicleIndex(AVVehicle avVehicle) {
-        return vehicleIdIntegerDatabase.getId(avVehicle.getId().toString());
+        return vehicleIdIntegerDatabase.getId(avVehicle);
     }
 
     void setIteration(Integer iteration) {
