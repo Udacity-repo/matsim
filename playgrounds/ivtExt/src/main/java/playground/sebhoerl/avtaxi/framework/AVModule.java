@@ -114,7 +114,10 @@ public class AVModule extends AbstractModule {
 
         bind(HungarianDispatcher.Factory.class);
         AVUtils.bindDispatcherFactory(binder(), HungarianDispatcher.class.getSimpleName()).to(HungarianDispatcher.Factory.class);
-        
+
+        bind(DoubleHungarianDispatcher.Factory.class);
+        AVUtils.bindDispatcherFactory(binder(), DoubleHungarianDispatcher.class.getSimpleName()).to(DoubleHungarianDispatcher.Factory.class);
+
         bind(SelfishDispatcher.Factory.class);
         AVUtils.bindDispatcherFactory(binder(), SelfishDispatcher.class.getSimpleName()).to(SelfishDispatcher.Factory.class);
 

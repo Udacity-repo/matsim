@@ -5,6 +5,7 @@ public enum SimulationDistribution {
     // ---
 
     public static void of(SimulationObject simulationObject) {
+        // TODO ARG!G!G!G!G!G!G!G!G!G this is the wrong place!!!! for last minute sorting!!!
         SimulationObjects.sortVehiclesAccordingToIndex(simulationObject);
 
         new StorageSubscriber().handle(simulationObject);
