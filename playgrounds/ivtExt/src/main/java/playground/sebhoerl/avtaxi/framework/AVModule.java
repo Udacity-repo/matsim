@@ -28,9 +28,9 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 
-import org.opengis.filter.Not;
 import playground.clruch.dispatcher.*;
 import playground.fseccamo.dispatcher.MPCDispatcher_1;
+import playground.joel.dispatcher.competitive.DoubleHungarianDispatcher;
 import playground.joel.dispatcher.single_heuristic.NewSingleHeuristicDispatcher; // TODO: delete this or the other
 import playground.maalbert.dispatcher.DFRDispatcher;
 import playground.sebhoerl.avtaxi.config.AVConfig;
