@@ -38,7 +38,7 @@ class DistanceAnalysis {
         for (int index = 0; index < size - 1; ++index) {
             SimulationObject s = storageSupplier.getSimulationObject(1 + index);
             for (VehicleContainer vc : s.vehicles)
-                list.get(vc.vehicleIndex).register(index, vc);
+                list.get(vc.vehicleIndex).register(index, vc); // errror can be bypassed by using vc.vehicleIndex - 50
 
             if (s.now % 10000 == 0)
                 System.out.println(s.now);
