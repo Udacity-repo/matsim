@@ -62,7 +62,6 @@ public class AnalyzeAll {
         getTotals(summary, coreAnalysis);
     }
 
-    // TODO: get mean and quantiles over entire day, placeholders
     static void getTotals(Tensor table, CoreAnalysis coreAnalysis) {
         int size = table.length();
         double timeRatio = 0;
