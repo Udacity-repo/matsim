@@ -18,23 +18,26 @@ import playground.clruch.export.AVStatus;
 import playground.clruch.net.SimulationObject;
 import playground.clruch.net.StorageSupplier;
 import playground.clruch.net.VehicleContainer;
+import playground.joel.helpers.AnalysisUtils;
 
 /**
  * Created by Joel on 05.04.2017.
  */
 class CoreAnalysis {
-    StorageSupplier storageSupplier;
-    int size;
+    private StorageSupplier storageSupplier;
+    private int size;
+    private String data;
     Tensor summary = Tensors.empty();
     Tensor totalWaitTimeQuantile = Tensors.empty();
     Tensor totalWaitTimeMean = Tensors.empty();
 
-    CoreAnalysis(StorageSupplier storageSupplierIn) {
+    CoreAnalysis(StorageSupplier storageSupplierIn, String dataDir) {
         storageSupplier = storageSupplierIn;
         size = storageSupplier.size();
+        data = dataDir;
     }
 
-    static Tensor quantiles(Tensor submission) {
+    private static Tensor quantiles(Tensor submission) {
         if (3 < submission.length()) {
             return Quantile.of(submission, Tensors.vectorDouble(.1, .5, .95));
         } else {
@@ -42,7 +45,7 @@ class CoreAnalysis {
         }
     }
 
-    static Tensor means(Tensor submission) {
+    private static Tensor means(Tensor submission) {
         if (3 < submission.length()) {
             return Mean.of(submission);
         } else {
@@ -50,7 +53,7 @@ class CoreAnalysis {
         }
     }
 
-    public void analyze() throws Exception {
+    public void analyze(int from, int to) throws Exception {
 
         Tensor table = Tensors.empty();
         Tensor allSubmissions = Tensors.empty();
@@ -71,6 +74,9 @@ class CoreAnalysis {
             Tensor waitTimeQuantile;
             Tensor waitTimeMean;
             {
+                // TODO: filter out requests not served by respective vehicles
+                // idea:    s.requests.stream().filter(rc -> rc.vehicleIndex >= from && rc.vehicleIndex < to);
+                // problem: request containers do not have vehicles assigned
                 Tensor submission = Tensor.of(s.requests.stream().map(rc -> RealScalar.of(now - rc.submissionTime)));
                 waitTimeQuantile = quantiles(submission);
                 waitTimeMean = means(submission);
@@ -85,7 +91,8 @@ class CoreAnalysis {
             Integer totVeh = 0;
             {
                 Map<AVStatus, List<VehicleContainer>> map = //
-                        s.vehicles.stream().collect(Collectors.groupingBy(vc -> vc.avStatus));
+                        s.vehicles.stream().filter(vc -> vc.vehicleIndex >= from && vc.vehicleIndex < to). //
+                        collect(Collectors.groupingBy(vc -> vc.avStatus));
                 for (Entry<AVStatus, List<VehicleContainer>> entry : map.entrySet()) {
                     numStatus.set(RealScalar.of(entry.getValue().size()), entry.getKey().ordinal());
                     totVeh += entry.getValue().size();
@@ -110,7 +117,7 @@ class CoreAnalysis {
 
         }
 
-        AnalyzeAll.saveFile(table, "basicDemo");
+        AnalyzeAll.saveFile(table, "basicDemo", data);
 
         Tensor uniqueSubmissions = Tensor.of(requestWaitTimes.values().stream().map(RealScalar::of));
 
@@ -120,6 +127,10 @@ class CoreAnalysis {
         System.out.println("mean = " + totalWaitTimeMean);
 
         summary = table;
+    }
 
+    public void analyze() throws Exception {
+        final int numVehicles = AnalysisUtils.getNumVehicles(storageSupplier);
+        analyze(0, numVehicles);
     }
 }

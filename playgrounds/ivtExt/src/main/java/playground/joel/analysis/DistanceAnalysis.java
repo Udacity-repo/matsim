@@ -12,33 +12,36 @@ import playground.clruch.net.SimulationObject;
 import playground.clruch.net.StorageSupplier;
 import playground.clruch.net.VehicleContainer;
 import playground.clruch.net.VehicleStatistic;
+import playground.joel.helpers.AnalysisUtils;
 
 /**
  * Created by Joel on 05.04.2017.
  */
 class DistanceAnalysis {
-    StorageSupplier storageSupplier;
-    int size;
+    private StorageSupplier storageSupplier;
+    private int size;
+    private String data;
     Tensor summary = Tensors.empty();
 
-    DistanceAnalysis(StorageSupplier storageSupplierIn) {
+    DistanceAnalysis(StorageSupplier storageSupplierIn, String dataDir) {
         storageSupplier = storageSupplierIn;
         size = storageSupplier.size();
+        data = dataDir;
     }
 
-    public void analzye() throws Exception {
+    public void analyze(int from, int to) throws Exception {
 
-        SimulationObject init = storageSupplier.getSimulationObject(1);
-        final int numVehicles = init.vehicles.size();
-        System.out.println("found vehicles: " + numVehicles);
+        System.out.println("found vehicles: " + (to - from));
 
+        final int numVehicles = AnalysisUtils.getNumVehicles(storageSupplier);
         List<VehicleStatistic> list = new ArrayList<>();
         IntStream.range(0, numVehicles).forEach(i -> list.add(new VehicleStatistic(size)));
 
         for (int index = 0; index < size - 1; ++index) {
             SimulationObject s = storageSupplier.getSimulationObject(1 + index);
             for (VehicleContainer vc : s.vehicles)
-                list.get(vc.vehicleIndex).register(index, vc); // errror can be bypassed by using vc.vehicleIndex - 50
+                if (vc.vehicleIndex >= from && vc.vehicleIndex < to)
+                    list.get(vc.vehicleIndex).register(index, vc);
 
             if (s.now % 10000 == 0)
                 System.out.println(s.now);
@@ -52,9 +55,14 @@ class DistanceAnalysis {
         Tensor table3 = table1.map(InvertUnlessZero.function).pmul(table2);
         summary = Join.of(1, table1, table2, table3);
         {
-            AnalyzeAll.saveFile(table1, "distanceTotal");
-            AnalyzeAll.saveFile(table2, "distanceWithCustomer");
-            AnalyzeAll.saveFile(table3, "distanceRatio");
+            AnalyzeAll.saveFile(table1, "distanceTotal", data);
+            AnalyzeAll.saveFile(table2, "distanceWithCustomer", data);
+            AnalyzeAll.saveFile(table3, "distanceRatio", data);
         }
+    }
+
+    public void analyze() throws Exception {
+        final int numVehicles = AnalysisUtils.getNumVehicles(storageSupplier);
+        analyze(0, numVehicles);
     }
 }
