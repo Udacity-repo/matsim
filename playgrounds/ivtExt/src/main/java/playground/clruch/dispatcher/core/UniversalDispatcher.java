@@ -6,6 +6,7 @@ import org.matsim.contrib.dvrp.schedule.Schedules;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.router.util.TravelTime;
 
+import playground.clruch.net.DispatchEvent;
 import playground.clruch.router.FuturePathContainer;
 import playground.clruch.utils.GlobalAssert;
 import playground.sebhoerl.avtaxi.config.AVDispatcherConfig;
@@ -48,13 +49,8 @@ public abstract class UniversalDispatcher extends AbstractUniversalDispatcher {
         GlobalAssert.that(status); // matchedRequests did not already contain avRequest
 
         final Schedule schedule = avVehicle.getSchedule();
-        GlobalAssert.that(schedule.getCurrentTask() == Schedules.getLastTask(schedule)); // check
-                                                                                         // that
-                                                                                         // current
-                                                                                         // task is
-                                                                                         // last
-                                                                                         // task in
-                                                                                         // schedule
+        // checkthatcurrenttask islasttask inschedule
+        GlobalAssert.that(schedule.getCurrentTask() == Schedules.getLastTask(schedule));
 
         final double endPickupTime = getTimeNow() + pickupDurationPerStop;
         FuturePathContainer futurePathContainer = futurePathFactory.createFuturePathContainer( //
@@ -62,6 +58,7 @@ public abstract class UniversalDispatcher extends AbstractUniversalDispatcher {
 
         assignDirective(avVehicle, new AcceptRequestDirective( //
                 avVehicle, avRequest, futurePathContainer, getTimeNow(), dropoffDurationPerStop));
+        addDispatchEventAcceptRequest(avVehicle, avRequest);
 
         Link returnVal = vehiclesWithCustomer.put(avVehicle, avRequest.getToLink());
         GlobalAssert.that(returnVal == null);

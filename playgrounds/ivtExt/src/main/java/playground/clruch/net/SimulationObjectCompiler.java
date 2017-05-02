@@ -1,5 +1,6 @@
 package playground.clruch.net;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -101,7 +102,10 @@ public class SimulationObjectCompiler {
     public SimulationObject compile(Collection<VehicleLinkPair> divertableVehicles, Map<AVVehicle, Link> vehicleLocations) {
         addDivertableVehicles(divertableVehicles, vehicleLocations);
         simulationObject.vehicles = vehicleMap.values().stream().collect(Collectors.toList());
-//        simulationObject.vehicles
         return simulationObject;
+    }
+
+    public void setSerializable(Object serializable) {
+        simulationObject.serializable = (Serializable) serializable;
     }
 }

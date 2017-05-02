@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -19,6 +20,9 @@ import org.matsim.contrib.dvrp.util.LinkTimePair;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.router.util.TravelTime;
 
+import playground.clruch.export.AVStatus;
+import playground.clruch.net.DispatchEvent;
+import playground.clruch.net.MatsimStaticDatabase;
 import playground.clruch.net.SimulationDistribution;
 import playground.clruch.net.SimulationObject;
 import playground.clruch.net.SimulationObjectCompiler;
@@ -61,6 +65,8 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
 
     protected int total_matchedRequests = 0;
     protected Integer AVVEHILCECOUNT = null;
+    
+    private final List<DispatchEvent> dispatchEventList = new LinkedList<>();
 
     protected AbstractUniversalDispatcher( //
             AVDispatcherConfig avDispatcherConfig, //
@@ -78,7 +84,7 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
         setInfoLinePeriod(safeConfig.getInteger("infoLinePeriod", 10));
         publishPeriod = safeConfig.getInteger("publishPeriod", 10);
     }
-
+    
     @Override
     void updateDatastructures(Collection<AVVehicle> stayVehicles) {
         stayVehicles.forEach(vehiclesWithCustomer::remove);
@@ -101,6 +107,17 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
         }
         // if (0 < failed)
         // System.out.println("failed to extract location for " + failed + " vehicles");
+        dispatchEventList.clear();
+    }
+    
+    protected void addDispatchEventAcceptRequest(AVVehicle avVehicle, AVRequest avRequest) {
+        final MatsimStaticDatabase db = MatsimStaticDatabase.INSTANCE;
+        DispatchEvent dispatchEvent = new DispatchEvent();
+        dispatchEvent.avStatus = AVStatus.DRIVEWITHCUSTOMER;
+        dispatchEvent.requestIndex = db.getRequestIndex(avRequest);
+        dispatchEvent.vehicleIndex = db.getVehicleIndex(avVehicle);
+        dispatchEvent.requestIndex = db.getLinkIndex(avRequest.getFromLink());
+        dispatchEventList.add(dispatchEvent);
     }
 
     /**
@@ -228,6 +245,7 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
             simulationObjectCompiler.addRequests(getAVRequests());
             simulationObjectCompiler.addVehiclesWithCustomer(getVehiclesWithCustomer(), vehicleLocations);
             simulationObjectCompiler.addRebalancingVehicles(getRebalancingVehicles(), vehicleLocations);
+            simulationObjectCompiler.setSerializable(dispatchEventList);
             SimulationObject simulationObject = simulationObjectCompiler.compile( //
                     getDivertableVehicles(), vehicleLocations);
 
