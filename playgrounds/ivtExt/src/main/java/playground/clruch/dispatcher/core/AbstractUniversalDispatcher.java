@@ -1,5 +1,6 @@
 package playground.clruch.dispatcher.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -106,8 +107,7 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
 //            GlobalAssert.that(AVVEHILCECOUNT == vehicleLocations.size());
         }
         // if (0 < failed)
-        // System.out.println("failed to extract location for " + failed + " vehicles");
-        dispatchEventList.clear();
+        // System.out.println("failed to extract location for " + failed + " vehicles");        
     }
     
     protected void addDispatchEventAcceptRequest(AVVehicle avVehicle, AVRequest avRequest) {
@@ -245,7 +245,7 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
             simulationObjectCompiler.addRequests(getAVRequests());
             simulationObjectCompiler.addVehiclesWithCustomer(getVehiclesWithCustomer(), vehicleLocations);
             simulationObjectCompiler.addRebalancingVehicles(getRebalancingVehicles(), vehicleLocations);
-            simulationObjectCompiler.setSerializable(dispatchEventList);
+            simulationObjectCompiler.setSerializable(new LinkedList<>(dispatchEventList));            
             SimulationObject simulationObject = simulationObjectCompiler.compile( //
                     getDivertableVehicles(), vehicleLocations);
 
@@ -255,6 +255,7 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
                 // GlobalAssert.that(AVVEHILCECOUNT == simulationObject.vehicles.size());
                 SimulationDistribution.of(simulationObject); // store simObj and distribute to clients
             }
+            dispatchEventList.clear();
         }
     }
 
