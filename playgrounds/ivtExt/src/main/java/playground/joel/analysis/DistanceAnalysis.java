@@ -2,6 +2,8 @@ package playground.joel.analysis;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.stream.IntStream;
 
 import ch.ethz.idsc.tensor.Tensor;
@@ -22,16 +24,22 @@ class DistanceAnalysis {
     private int size;
     private String data;
     Tensor summary = Tensors.empty();
+    NavigableMap<Integer, Integer> requestVehicleIndices = new TreeMap<>();
+    NavigableMap<Integer, Integer> vehicleGroupMap = new TreeMap<>();
 
-    DistanceAnalysis(StorageSupplier storageSupplierIn, String dataDir) {
+    DistanceAnalysis(StorageSupplier storageSupplierIn, String dataDir, //
+                     NavigableMap<Integer, Integer> requestVehicleIndicesIn, //
+                     NavigableMap<Integer, Integer> vehicleGroupMapIn) {
         storageSupplier = storageSupplierIn;
         size = storageSupplier.size();
         data = dataDir;
+        requestVehicleIndices = requestVehicleIndicesIn;
+        vehicleGroupMap = vehicleGroupMapIn;
     }
 
     public void analyze(int from, int to) throws Exception {
 
-        int group = AnalysisUtils.getGroup(from);
+        int group = AnalysisUtils.getGroup(from, vehicleGroupMap);
 
         System.out.println("found vehicles: " + (to - from));
 
@@ -42,7 +50,7 @@ class DistanceAnalysis {
         for (int index = 0; index < size - 1; ++index) {
             SimulationObject s = storageSupplier.getSimulationObject(1 + index);
             for (VehicleContainer vc : s.vehicles)
-                if (AnalysisUtils.getGroup(vc.vehicleIndex) == group)
+                if (AnalysisUtils.getGroup(vc.vehicleIndex, vehicleGroupMap) == group)
                     list.get(vc.vehicleIndex).register(index, vc);
 
             if (s.now % 10000 == 0)

@@ -35,7 +35,7 @@ import playground.sebhoerl.avtaxi.dispatcher.AVDispatcher;
 import playground.sebhoerl.avtaxi.framework.AVModule;
 import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 
-public class DoubleHungarianDispatcher extends UniversalDispatcher {
+public class MultiHungarianDispatcher extends UniversalDispatcher {
     public static final File GROUPSIZEFILE =new File("output/groupSize.mdisp.txt"); 
 
     private final int dispatchPeriod;
@@ -47,12 +47,12 @@ public class DoubleHungarianDispatcher extends UniversalDispatcher {
 
     VehicleIntegerDatabase vehicleIntegerDatabase = new VehicleIntegerDatabase();
 
-    private DoubleHungarianDispatcher( //
-            AVDispatcherConfig avDispatcherConfig, //
-            TravelTime travelTime, //
-            ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
-            EventsManager eventsManager, //
-            Network network, AbstractRequestSelector abstractRequestSelector) {
+    private MultiHungarianDispatcher( //
+                                      AVDispatcherConfig avDispatcherConfig, //
+                                      TravelTime travelTime, //
+                                      ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
+                                      EventsManager eventsManager, //
+                                      Network network, AbstractRequestSelector abstractRequestSelector) {
         super(avDispatcherConfig, travelTime, parallelLeastCostPathCalculator, eventsManager);
         SafeConfig safeConfig = SafeConfig.wrap(avDispatcherConfig);
         dispatchPeriod = safeConfig.getInteger("dispatchPeriod", 10);
@@ -139,7 +139,7 @@ public class DoubleHungarianDispatcher extends UniversalDispatcher {
         @Override
         public AVDispatcher createDispatcher(AVDispatcherConfig config, AVGeneratorConfig generatorConfig) {
             AbstractRequestSelector abstractRequestSelector = new OldestRequestSelector();
-            return new DoubleHungarianDispatcher( //
+            return new MultiHungarianDispatcher( //
                     config, travelTime, router, eventsManager, network, abstractRequestSelector);
         }
     }

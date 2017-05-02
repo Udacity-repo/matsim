@@ -29,11 +29,16 @@ class CoreAnalysis {
     Tensor totalWaitTimeQuantile = Tensors.empty();
     Tensor totalWaitTimeMean = Tensors.empty();
     NavigableMap<Integer, Integer> requestVehicleIndices = new TreeMap<>();
+    NavigableMap<Integer, Integer> vehicleGroupMap = new TreeMap<>();
 
-    CoreAnalysis(StorageSupplier storageSupplierIn, String dataDir) {
-        storageSupplier = storageSupplierIn;
-        size = storageSupplier.size();
-        data = dataDir;
+    CoreAnalysis(StorageSupplier storageSupplierIn, String dataDir, //
+                NavigableMap<Integer, Integer> requestVehicleIndicesIn, //
+                NavigableMap<Integer, Integer> vehicleGroupMapIn) {
+            storageSupplier = storageSupplierIn;
+            size = storageSupplier.size();
+            data = dataDir;
+            requestVehicleIndices = requestVehicleIndicesIn;
+            vehicleGroupMap = vehicleGroupMapIn;
     }
 
     private static Tensor quantiles(Tensor submission) {
@@ -58,8 +63,8 @@ class CoreAnalysis {
         Tensor allSubmissions = Tensors.empty();
 
         Map<Integer, Double> requestWaitTimes = new HashMap<>();
-        requestVehicleIndices = AnalysisUtils.createRequestVehicleIndices(storageSupplier);
-        int group = AnalysisUtils.getGroup(from);
+
+        int group = AnalysisUtils.getGroup(from, vehicleGroupMap);
 
         for (int index = 0; index < size; ++index) {
 
@@ -92,7 +97,7 @@ class CoreAnalysis {
             Integer totVeh = 0;
             {
                 Map<AVStatus, List<VehicleContainer>> map = //
-                        s.vehicles.stream().filter(vc -> AnalysisUtils.getGroup(vc.vehicleIndex) == group). //
+                        s.vehicles.stream().filter(vc -> AnalysisUtils.getGroup(vc.vehicleIndex, vehicleGroupMap) == group). //
                         collect(Collectors.groupingBy(vc -> vc.avStatus));
                 for (Entry<AVStatus, List<VehicleContainer>> entry : map.entrySet()) {
                     numStatus.set(RealScalar.of(entry.getValue().size()), entry.getKey().ordinal());

@@ -52,25 +52,14 @@ public abstract class AnalysisUtils {
         return size;
     }
 
-    public static int getGroup(int vehicleIndex) {
-        int group;
-        int groupBoundary = 0;
-        int i = 0;
-        while (true) {
-            if(vehicleIndex >= groupBoundary && vehicleIndex < groupBoundary + getGroupSize(i)) {
-                group = i;
-                break;
-            }
-            groupBoundary += getGroupSize(i);
-            i++;
-        }
-        return group;
+    public static int getGroup(int vehicleIndex, NavigableMap<Integer, Integer> vehicleGroupMap) {
+        return vehicleGroupMap.floorEntry(vehicleIndex).getValue();
     }
 
-    public static int getGroup(int requestIndex, NavigableMap<Integer, Integer> requestVehicleIndices) {
+    public static int getGroup(int requestIndex, NavigableMap<Integer, Integer> requestVehicleIndices, NavigableMap<Integer, Integer> vehicleGroupMap) {
         GlobalAssert.that(requestVehicleIndices.containsKey(requestIndex));
         int vehicleIndex = requestVehicleIndices.get(requestIndex);
-        return getGroup(vehicleIndex);
+        return getGroup(vehicleIndex, vehicleGroupMap);
     }
 
     public static NavigableMap<Integer, Integer> createRequestVehicleIndices(StorageSupplier storageSupplier) throws Exception {
@@ -86,6 +75,14 @@ public abstract class AnalysisUtils {
         return requestVehicleIndices;
     }
 
-
+    public static NavigableMap<Integer, Integer> createVehicleGroupMap() {
+        NavigableMap<Integer, Integer> vehicleGroupMap = new TreeMap<>();
+        int firstGroupIndex = 0;
+        for (int group = 0; group < getNumGroups(); group++) {
+            vehicleGroupMap.put(firstGroupIndex, group);
+            firstGroupIndex += getGroupSize(group);
+        }
+        return  vehicleGroupMap;
+    }
 
 }

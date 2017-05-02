@@ -5,6 +5,8 @@ import static playground.clruch.utils.NetworkLoader.loadNetwork;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import org.matsim.api.core.v01.network.Network;
 import ch.ethz.idsc.tensor.Tensor;
@@ -64,15 +66,19 @@ public class AnalyzeAll {
         getTotals(summary, coreAnalysis, data);
     }
 
-    private static void analyzeAndPlot(File config, StorageSupplier storageSupplier, String dataDir, int from, int to) throws Exception {
+    private static void analyzeAndPlot(File config, StorageSupplier storageSupplier, String dataDir, int from, int to, //
+                                       NavigableMap<Integer, Integer> requestVehicleIndices, //
+                                       NavigableMap<Integer, Integer> vehicleGroupMap) throws Exception {
 
         GlobalAssert.that(to > from);
         File data = new File(config.getParent(), "output/" + dataDir);
         data.mkdir();
 
         // analyze and print files
-        CoreAnalysis coreAnalysis = new CoreAnalysis(storageSupplier, dataDir);
-        DistanceAnalysis distanceAnalysis = new DistanceAnalysis(storageSupplier, dataDir);
+        CoreAnalysis coreAnalysis = new CoreAnalysis(storageSupplier, dataDir, //
+                requestVehicleIndices, vehicleGroupMap);
+        DistanceAnalysis distanceAnalysis = new DistanceAnalysis(storageSupplier, dataDir, //
+                requestVehicleIndices, vehicleGroupMap);
         try {
             coreAnalysis.analyze(from, to);
             distanceAnalysis.analyze(from, to);
@@ -83,9 +89,11 @@ public class AnalyzeAll {
         collectAndPlot(coreAnalysis, distanceAnalysis, dataDir);
     }
 
-    private static void analyzeAndPlot(File config, StorageSupplier storageSupplier, String dataDir) throws Exception {
+    private static void analyzeAndPlot(File config, StorageSupplier storageSupplier, String dataDir, //
+                                       NavigableMap<Integer, Integer> requestVehicleIndices, //
+                                       NavigableMap<Integer, Integer> vehicleGroupMap) throws Exception {
         final int numVehicles = AnalysisUtils.getNumVehicles(storageSupplier);
-        analyzeAndPlot(config, storageSupplier, dataDir, 0, numVehicles);
+        analyzeAndPlot(config, storageSupplier, dataDir, 0, numVehicles, requestVehicleIndices, vehicleGroupMap);
     }
 
     private static void getTotals(Tensor table, CoreAnalysis coreAnalysis, String data) {
@@ -126,13 +134,15 @@ public class AnalyzeAll {
         final int size = storageSupplier.size();
         System.out.println("found files: " + size);
 
-        analyzeAndPlot(config, storageSupplier, "data");
-        final int numVehicles = AnalysisUtils.getNumVehicles(storageSupplier);
+        NavigableMap<Integer, Integer> requestVehicleIndices = AnalysisUtils.createRequestVehicleIndices(storageSupplier);
+        NavigableMap<Integer, Integer> vehicleGroupMap = AnalysisUtils.createVehicleGroupMap();
+
+        analyzeAndPlot(config, storageSupplier, "data", requestVehicleIndices, vehicleGroupMap);
         if (AnalysisUtils.getNumGroups() != 0) {
             int lowerBound = 0;
             for (int i = 0; i < AnalysisUtils.getNumGroups(); i++) {
                 System.out.println("Analysis of group " + i);
-                analyzeAndPlot(config, storageSupplier, "data_" + i, lowerBound, lowerBound + AnalysisUtils.getGroupSize(i));
+                analyzeAndPlot(config, storageSupplier, "data_" + i, lowerBound, lowerBound + AnalysisUtils.getGroupSize(i), requestVehicleIndices, vehicleGroupMap);
                 lowerBound += AnalysisUtils.getGroupSize(i);
             }
             // TODO: handle possible remaining vehicles

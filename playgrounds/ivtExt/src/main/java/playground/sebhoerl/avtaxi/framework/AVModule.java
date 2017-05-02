@@ -30,7 +30,7 @@ import com.google.inject.name.Names;
 
 import playground.clruch.dispatcher.*;
 import playground.fseccamo.dispatcher.MPCDispatcher_1;
-import playground.joel.dispatcher.competitive.DoubleHungarianDispatcher;
+import playground.joel.dispatcher.competitive.MultiHungarianDispatcher;
 import playground.joel.dispatcher.single_heuristic.NewSingleHeuristicDispatcher; // TODO: delete this or the other
 import playground.maalbert.dispatcher.DFRDispatcher;
 import playground.sebhoerl.avtaxi.config.AVConfig;
@@ -115,8 +115,8 @@ public class AVModule extends AbstractModule {
         bind(HungarianDispatcher.Factory.class);
         AVUtils.bindDispatcherFactory(binder(), HungarianDispatcher.class.getSimpleName()).to(HungarianDispatcher.Factory.class);
 
-        bind(DoubleHungarianDispatcher.Factory.class);
-        AVUtils.bindDispatcherFactory(binder(), DoubleHungarianDispatcher.class.getSimpleName()).to(DoubleHungarianDispatcher.Factory.class);
+        bind(MultiHungarianDispatcher.Factory.class);
+        AVUtils.bindDispatcherFactory(binder(), MultiHungarianDispatcher.class.getSimpleName()).to(MultiHungarianDispatcher.Factory.class);
 
         bind(SelfishDispatcher.Factory.class);
         AVUtils.bindDispatcherFactory(binder(), SelfishDispatcher.class.getSimpleName()).to(SelfishDispatcher.Factory.class);
