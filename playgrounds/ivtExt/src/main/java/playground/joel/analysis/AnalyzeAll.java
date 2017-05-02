@@ -113,7 +113,6 @@ public class AnalyzeAll {
     public static void analyze(String[] args) throws Exception {
 
         File config = new File(args[0]);
-        final int firstGroupSize = AnalysisUtils.getFirstGroupSize();
 
         // load system network
         Network network = loadNetwork(args);
@@ -129,11 +128,14 @@ public class AnalyzeAll {
 
         analyzeAndPlot(config, storageSupplier, "data");
         final int numVehicles = AnalysisUtils.getNumVehicles(storageSupplier);
-        if (firstGroupSize != 0 && firstGroupSize != numVehicles) {
-            System.out.println("Analysis of group 1");
-            analyzeAndPlot(config, storageSupplier, "data_1", 0 , firstGroupSize);
-            System.out.println("Analysis of group 2");
-            analyzeAndPlot(config, storageSupplier, "data_2", firstGroupSize, numVehicles);
+        if (AnalysisUtils.getNumGroups() != 0) {
+            int lowerBound = 0;
+            for (int i = 0; i < AnalysisUtils.getNumGroups(); i++) {
+                System.out.println("Analysis of group " + i);
+                analyzeAndPlot(config, storageSupplier, "data_" + i, lowerBound, lowerBound + AnalysisUtils.getGroupSize(i));
+                lowerBound += AnalysisUtils.getGroupSize(i);
+            }
+            // TODO: handle possible remaining vehicles
         }
     }
 }

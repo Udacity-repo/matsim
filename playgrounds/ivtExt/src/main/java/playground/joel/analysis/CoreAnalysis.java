@@ -1,8 +1,6 @@
 package playground.joel.analysis;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -30,6 +28,7 @@ class CoreAnalysis {
     Tensor summary = Tensors.empty();
     Tensor totalWaitTimeQuantile = Tensors.empty();
     Tensor totalWaitTimeMean = Tensors.empty();
+    NavigableMap<Integer, Integer> requestVehicleIndices = new TreeMap<>();
 
     CoreAnalysis(StorageSupplier storageSupplierIn, String dataDir) {
         storageSupplier = storageSupplierIn;
@@ -59,6 +58,8 @@ class CoreAnalysis {
         Tensor allSubmissions = Tensors.empty();
 
         Map<Integer, Double> requestWaitTimes = new HashMap<>();
+        requestVehicleIndices = AnalysisUtils.createRequestVehicleIndices(storageSupplier);
+        int group = AnalysisUtils.getGroup(from);
 
         for (int index = 0; index < size; ++index) {
 
@@ -74,16 +75,16 @@ class CoreAnalysis {
             Tensor waitTimeQuantile;
             Tensor waitTimeMean;
             {
-                // TODO: filter out requests not served by respective vehicles
-                // idea:    s.requests.stream().filter(rc -> rc.vehicleIndex >= from && rc.vehicleIndex < to);
-                // problem: request containers do not have vehicles assigned
-                Tensor submission = Tensor.of(s.requests.stream().map(rc -> RealScalar.of(now - rc.submissionTime)));
+                Tensor submission = Tensor.of(s.requests.stream(). //
+                        //filter(rc -> AnalysisUtils.getGroup(rc.requestIndex, requestVehicleIndices) == group). //
+                        map(rc -> RealScalar.of(now - rc.submissionTime)));
                 waitTimeQuantile = quantiles(submission);
                 waitTimeMean = means(submission);
                 allSubmissions.append(submission);
             }
 
-            s.requests.stream().forEach(rc -> requestWaitTimes.put(rc.requestIndex, now - rc.submissionTime));
+            s.requests.stream().//filter(rc -> AnalysisUtils.getGroup(rc.requestIndex, requestVehicleIndices) == group). //
+                    forEach(rc -> requestWaitTimes.put(rc.requestIndex, now - rc.submissionTime));
 
             // status of AVs and occupancy ratio
             Tensor numStatus = Array.zeros(AVStatus.values().length);
@@ -91,7 +92,7 @@ class CoreAnalysis {
             Integer totVeh = 0;
             {
                 Map<AVStatus, List<VehicleContainer>> map = //
-                        s.vehicles.stream().filter(vc -> vc.vehicleIndex >= from && vc.vehicleIndex < to). //
+                        s.vehicles.stream().filter(vc -> AnalysisUtils.getGroup(vc.vehicleIndex) == group). //
                         collect(Collectors.groupingBy(vc -> vc.avStatus));
                 for (Entry<AVStatus, List<VehicleContainer>> entry : map.entrySet()) {
                     numStatus.set(RealScalar.of(entry.getValue().size()), entry.getKey().ordinal());
