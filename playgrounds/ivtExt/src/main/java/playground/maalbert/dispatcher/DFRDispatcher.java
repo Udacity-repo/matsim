@@ -39,6 +39,7 @@ import playground.sebhoerl.avtaxi.generator.PopulationDensityGenerator;
 import playground.sebhoerl.avtaxi.passenger.AVRequest;
 import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,6 +68,7 @@ public class DFRDispatcher extends PartitionedDispatcher {
         private final long popSize;
         private final FeedbackTerm feebackTerm;
         private final Map<VirtualLink, Double> vLinkWeights;
+        Tensor printVals = Tensors.empty();
         private Tensor rebalancingOrderRest;
         private Tensor inConsensus;
         private Tensor consensusVal;
@@ -371,37 +373,41 @@ public class DFRDispatcher extends PartitionedDispatcher {
         if (round_now % redispatchPeriod == 0){
         // II.ii if vehilces remain in vNode, send to customers
             {
-                // collect destinations per vNode
-                Map<VirtualNode, List<Link>> destinationLinks = createvNodeLinksMap();
+//                // collect destinations per vNode
+//                Map<VirtualNode, List<Link>> destinationLinks = createvNodeLinksMap();
+//
+//                long tStart = System.currentTimeMillis();
+//
+//                for (VirtualNode vNode : virtualNetwork.getVirtualNodes()) {
+//                    destinationLinks.get(vNode).addAll( // stores from links
+//                            requests.get(vNode).stream().map(AVRequest::getFromLink).collect(Collectors.toList()));
+//                }
+//
+//                // collect available vehicles per vNode
+//                Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
+//
+//                // assign destinations to the available vehicles
+//                {
+//                    GlobalAssert.that(available_Vehicles.keySet().containsAll(virtualNetwork.getVirtualNodes()));
+//                    GlobalAssert.that(destinationLinks.keySet().containsAll(virtualNetwork.getVirtualNodes()));
+//
+//                    // DO NOT PUT PARALLEL anywhere in this loop !
+//                    for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes())
+//
+//                        vehicleDestMatcher //
+//                                .match(available_Vehicles.get(virtualNode), destinationLinks.get(virtualNode)) //
+//                                .entrySet().stream().forEach(this::setVehicleDiversion);
+//                }
+//
+//                //TIME DISPLAY
+//                long tEnd = System.currentTimeMillis();
+//                long tDelta = tEnd - tStart;
+//                double elapsedSeconds = tDelta / 1000.0;
+//
+//                System.out.print("Time to do all the mathcings: "+ Double.toString(elapsedSeconds)+"\n");
 
-                long tStart = System.currentTimeMillis();
-
-                for (VirtualNode vNode : virtualNetwork.getVirtualNodes()) {
-                    destinationLinks.get(vNode).addAll( // stores from links
-                            requests.get(vNode).stream().map(AVRequest::getFromLink).collect(Collectors.toList()));
-                }
-
-                // collect available vehicles per vNode
-                Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
-
-                // assign destinations to the available vehicles
-                {
-                    GlobalAssert.that(available_Vehicles.keySet().containsAll(virtualNetwork.getVirtualNodes()));
-                    GlobalAssert.that(destinationLinks.keySet().containsAll(virtualNetwork.getVirtualNodes()));
-
-                    // DO NOT PUT PARALLEL anywhere in this loop !
-                    for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes())
-                        vehicleDestMatcher //
-                                .match(available_Vehicles.get(virtualNode), destinationLinks.get(virtualNode)) //
-                                .entrySet().stream().forEach(this::setVehicleDiversion);
-                }
-
-                //TIME DISPLAY
-                long tEnd = System.currentTimeMillis();
-                long tDelta = tEnd - tStart;
-                double elapsedSeconds = tDelta / 1000.0;
-
-                System.out.print("Time to do all the mathcings: "+ Double.toString(elapsedSeconds)+"\n");
+                printVals = HungarianUtils.globalBipartiteMatching(this, () -> getVirtualNodeDivertableNotRebalancingVehicles().values()
+                        .stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
             }
         }
     }

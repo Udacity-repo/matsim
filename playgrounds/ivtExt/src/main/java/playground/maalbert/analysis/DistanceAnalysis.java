@@ -49,7 +49,7 @@ class DistanceAnalysis {
 
         Tensor table1 = list.stream().map(vs -> vs.distanceTotal).reduce(Tensor::add).get();
         Tensor table2 = list.stream().map(vs -> vs.distanceWithCustomer).reduce(Tensor::add).get();
-        Tensor table4 = list.stream().map(vs -> vs.distanceRebalanceDrive).reduce(Tensor::add).get();
+        Tensor table4 = list.stream().map(vs -> vs.distanceDriveToCustomer).reduce(Tensor::add).get();
         Tensor table5 = list.stream().map(vs -> vs.distanceRebalanceDrive).reduce(Tensor::add).get();
         Tensor table3 = table1.map(InvertUnlessZero.function).pmul(table2);
         summary = Join.of(1, table1, table2, table3);
