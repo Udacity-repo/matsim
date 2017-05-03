@@ -116,7 +116,7 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
         dispatchEvent.avStatus = AVStatus.DRIVEWITHCUSTOMER;
         dispatchEvent.requestIndex = db.getRequestIndex(avRequest);
         dispatchEvent.vehicleIndex = db.getVehicleIndex(avVehicle);
-        dispatchEvent.requestIndex = db.getLinkIndex(avRequest.getFromLink());
+        dispatchEvent.linkIndex = db.getLinkIndex(avRequest.getFromLink());
         dispatchEventList.add(dispatchEvent);
     }
 
