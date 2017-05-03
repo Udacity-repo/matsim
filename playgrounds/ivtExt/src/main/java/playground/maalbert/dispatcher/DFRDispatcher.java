@@ -15,8 +15,10 @@ import ch.ethz.idsc.tensor.alg.Array;
 import ch.ethz.idsc.tensor.io.Pretty;
 import ch.ethz.idsc.tensor.red.Mean;
 import ch.ethz.idsc.tensor.red.Total;
+import ch.ethz.idsc.tensor.sca.Abs;
 import ch.ethz.idsc.tensor.sca.Ceiling;
 import ch.ethz.idsc.tensor.sca.Floor;
+import ch.ethz.idsc.tensor.sca.Round;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.matsim.api.core.v01.network.Link;
@@ -209,9 +211,14 @@ public class DFRDispatcher extends PartitionedDispatcher {
                     }
                     Tensor lowerConsensusValue = systemImbalance.subtract(Floor.of(consensusVal));
                     Tensor upperConsensusValue = systemImbalance.subtract(Ceiling.of(consensusVal));
+                    Tensor debugCheck          = Abs.of(systemImbalance.subtract(Round.of(consensusVal)));
                     for (int i = 0; i < N_vStations; i++) {
-                        boolean aboveConsSet_LB = lowerConsensusValue.Get(i).number().doubleValue() >= -neighCount.Get(i).number().doubleValue();
-                        boolean belowConsSet_UB = upperConsensusValue.Get(i).number().doubleValue() <= neighCount.Get(i).number().doubleValue();
+                        //TESTHACK!!->adapt
+                        boolean aboveConsSet_LB = lowerConsensusValue.Get(i).number().doubleValue() >= -(neighCount.Get(i).number().doubleValue()+1.0)/2.0;
+                        boolean belowConsSet_UB = upperConsensusValue.Get(i).number().doubleValue() <= (neighCount.Get(i).number().doubleValue()+1.0)/2.0;
+                        //TESTHACK!!
+//                        boolean aboveConsSet_LB = debugCheck.Get(i).number().doubleValue() >= -1;
+//                        boolean belowConsSet_UB = debugCheck.Get(i).number().doubleValue() <= 1;
                         if (aboveConsSet_LB && belowConsSet_UB) {
                             inConsensus.set(RealScalar.of(1), i);
                         } else {
@@ -249,6 +256,7 @@ public class DFRDispatcher extends PartitionedDispatcher {
 //                                                rebalancingOrderRest.Get(indexTo, indexFrom).number().doubleValue();
 
                         if (Total.of(inConsensus).Get().number().intValue() != N_vStations) {
+                        //if (true){
                             switch (feebackTerm) {
                                 case LDX: {
                                     double lambdaFrom = lambda.Get(indexFrom).number().doubleValue();
@@ -296,7 +304,8 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 Tensor feedfwrdRebalancingDFR = feedfwrd_Rebalancing_LPR.multiply(RealScalar.of(rebalancingPeriod));
                 Tensor feedbackRebalancingDFR = feedback_Rebalancing_DFR.add(feedfwrdRebalancingDFR).add(rebalancingOrderRest);
                 Tensor rebalancingOrder = Floor.of(feedbackRebalancingDFR);
-                    rebalancingOrderRest = feedbackRebalancingDFR.subtract(rebalancingOrder);
+                rebalancingOrderRest = feedbackRebalancingDFR.subtract(rebalancingOrder);
+
 
 //                //DEBUG START
 //                System.out.println("Rebalancing Tensor:\n" + Pretty.of(rebalancingOrder));
