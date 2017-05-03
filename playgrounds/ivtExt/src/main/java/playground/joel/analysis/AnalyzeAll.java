@@ -113,7 +113,8 @@ public class AnalyzeAll {
         double distanceRatio = distanceWithCust / distance;
 
         TotalData totalData = new TotalData();
-        totalData.generate(String.valueOf(timeRatio), String.valueOf(distanceRatio), String.valueOf(mean), String.valueOf(quantile50), String.valueOf(quantile95),
+        totalData.generate(String.valueOf(timeRatio), String.valueOf(distanceRatio), //
+                String.valueOf(mean), String.valueOf(quantile50), String.valueOf(quantile95), //
                 new File("output/" + data + "/totalData.xml"));
     }
 
@@ -141,8 +142,10 @@ public class AnalyzeAll {
         if (AnalysisUtils.getNumGroups() != 0) {
             int lowerBound = 0;
             for (int i = 0; i < AnalysisUtils.getNumGroups(); i++) {
+                System.out.println("-------------------------------------------------------------------");
                 System.out.println("Analysis of group " + i);
-                analyzeAndPlot(config, storageSupplier, "data_" + i, lowerBound, lowerBound + AnalysisUtils.getGroupSize(i), requestVehicleIndices, vehicleGroupMap);
+                analyzeAndPlot(config, storageSupplier, "data_" + i, //
+                        lowerBound, lowerBound + AnalysisUtils.getGroupSize(i), requestVehicleIndices, vehicleGroupMap);
                 lowerBound += AnalysisUtils.getGroupSize(i);
             }
             // TODO: handle possible remaining vehicles

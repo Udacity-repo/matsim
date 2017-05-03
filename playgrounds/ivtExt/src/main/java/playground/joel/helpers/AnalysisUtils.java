@@ -56,7 +56,10 @@ public abstract class AnalysisUtils {
         return vehicleGroupMap.floorEntry(vehicleIndex).getValue();
     }
 
-    public static int getGroup(int requestIndex, NavigableMap<Integer, Integer> requestVehicleIndices, NavigableMap<Integer, Integer> vehicleGroupMap) {
+    public static int getGroup(int requestIndex, NavigableMap<Integer, Integer> requestVehicleIndices, //
+                               NavigableMap<Integer, Integer> vehicleGroupMap) {
+        if (!requestVehicleIndices.containsKey(requestIndex))
+            System.out.println("ERROR: No vehicle corresponding to request " + requestIndex + " found!");
         GlobalAssert.that(requestVehicleIndices.containsKey(requestIndex));
         int vehicleIndex = requestVehicleIndices.get(requestIndex);
         return getGroup(vehicleIndex, vehicleGroupMap);
@@ -83,6 +86,19 @@ public abstract class AnalysisUtils {
             firstGroupIndex += getGroupSize(group);
         }
         return  vehicleGroupMap;
+    }
+
+    public static boolean isInGroup(int vehicleIndex, int from , int to) {
+        if (vehicleIndex >= from && vehicleIndex < to) return true;
+        else return false;
+    }
+
+    public static boolean isInGroup(int requestIndex, int from , int to, NavigableMap<Integer, Integer> requestVehicleIndices) {
+        if (!requestVehicleIndices.containsKey(requestIndex))
+            System.out.println("ERROR: No vehicle corresponding to request " + requestIndex + " found!");
+        GlobalAssert.that(requestVehicleIndices.containsKey(requestIndex));
+        int vehicleIndex = requestVehicleIndices.get(requestIndex);
+        return isInGroup(vehicleIndex, from , to);
     }
 
 }

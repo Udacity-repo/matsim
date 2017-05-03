@@ -64,8 +64,6 @@ class CoreAnalysis {
 
         Map<Integer, Double> requestWaitTimes = new HashMap<>();
 
-        int group = AnalysisUtils.getGroup(from, vehicleGroupMap);
-
         for (int index = 0; index < size; ++index) {
 
             SimulationObject s = storageSupplier.getSimulationObject(index);
@@ -81,14 +79,14 @@ class CoreAnalysis {
             Tensor waitTimeMean;
             {
                 Tensor submission = Tensor.of(s.requests.stream(). //
-                        //filter(rc -> AnalysisUtils.getGroup(rc.requestIndex, requestVehicleIndices) == group). //
+                        filter(rc -> AnalysisUtils.isInGroup(rc.requestIndex, from, to, requestVehicleIndices)). //
                         map(rc -> RealScalar.of(now - rc.submissionTime)));
                 waitTimeQuantile = quantiles(submission);
                 waitTimeMean = means(submission);
                 allSubmissions.append(submission);
             }
 
-            s.requests.stream().//filter(rc -> AnalysisUtils.getGroup(rc.requestIndex, requestVehicleIndices) == group). //
+            s.requests.stream().filter(rc -> AnalysisUtils.isInGroup(rc.requestIndex, from, to, requestVehicleIndices)). //
                     forEach(rc -> requestWaitTimes.put(rc.requestIndex, now - rc.submissionTime));
 
             // status of AVs and occupancy ratio
@@ -97,7 +95,7 @@ class CoreAnalysis {
             Integer totVeh = 0;
             {
                 Map<AVStatus, List<VehicleContainer>> map = //
-                        s.vehicles.stream().filter(vc -> AnalysisUtils.getGroup(vc.vehicleIndex, vehicleGroupMap) == group). //
+                        s.vehicles.stream().filter(vc -> AnalysisUtils.isInGroup(vc.vehicleIndex, from, to)). //
                         collect(Collectors.groupingBy(vc -> vc.avStatus));
                 for (Entry<AVStatus, List<VehicleContainer>> entry : map.entrySet()) {
                     numStatus.set(RealScalar.of(entry.getValue().size()), entry.getKey().ordinal());

@@ -39,8 +39,6 @@ class DistanceAnalysis {
 
     public void analyze(int from, int to) throws Exception {
 
-        int group = AnalysisUtils.getGroup(from, vehicleGroupMap);
-
         System.out.println("found vehicles: " + (to - from));
 
         final int numVehicles = AnalysisUtils.getNumVehicles(storageSupplier);
@@ -50,7 +48,7 @@ class DistanceAnalysis {
         for (int index = 0; index < size - 1; ++index) {
             SimulationObject s = storageSupplier.getSimulationObject(1 + index);
             for (VehicleContainer vc : s.vehicles)
-                if (AnalysisUtils.getGroup(vc.vehicleIndex, vehicleGroupMap) == group)
+                if (AnalysisUtils.isInGroup(vc.vehicleIndex, from, to))
                     list.get(vc.vehicleIndex).register(index, vc);
 
             if (s.now % 10000 == 0)
