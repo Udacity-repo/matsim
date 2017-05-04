@@ -71,7 +71,6 @@ public class VirtualNetwork implements Serializable {
             System.out.println("link: " + link.getId().toString());
             System.out.println("virtualNode not found ");
         }
-
         return linkVNodeMap.get(link);
     }
 
@@ -92,17 +91,19 @@ public class VirtualNetwork implements Serializable {
 
     /* package */ VirtualNode addVirtualNode(String idIn, Set<Link> linksIn, int neighCount, Coord coord) {
         VirtualNode virtualNode = new VirtualNode(virtualNodes.size(), idIn, linksIn, neighCount, coord);
+        // virtualNodes.add(virtualNode);
+        // for (Link link : virtualNode.getLinks())
+        // linkVNodeMap.put(link, virtualNode);
+        // return virtualNode;
+        return addVirtualNode(virtualNode);
+    }
+
+    /* package */ VirtualNode addVirtualNode(VirtualNode virtualNode) {
+        GlobalAssert.that(virtualNodes.size() == virtualNode.index); // <- NEVER remove this check
         virtualNodes.add(virtualNode);
         for (Link link : virtualNode.getLinks())
             linkVNodeMap.put(link, virtualNode);
         return virtualNode;
-    }
-
-    /* package */ VirtualNode addVirtualNode(VirtualNode virtualNodeIn) {
-        virtualNodes.add(virtualNodeIn);
-        for (Link link : virtualNodeIn.getLinks())
-            linkVNodeMap.put(link, virtualNodeIn);
-        return virtualNodeIn;
     }
 
     /* package */ void addVirtualLink(String idIn, VirtualNode fromIn, VirtualNode toIn, double travelTime) {
