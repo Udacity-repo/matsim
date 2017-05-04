@@ -1,16 +1,25 @@
 package playground.joel.dispatcher.competitive;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+
+import org.matsim.api.core.v01.network.Network;
+import org.matsim.core.api.experimental.events.EventsManager;
+import org.matsim.core.router.util.TravelTime;
+
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+
 import ch.ethz.idsc.tensor.RealScalar;
 import ch.ethz.idsc.tensor.Tensor;
 import ch.ethz.idsc.tensor.Tensors;
 import ch.ethz.idsc.tensor.alg.Array;
 import ch.ethz.idsc.tensor.io.Get;
 import ch.ethz.idsc.tensor.io.Put;
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import org.matsim.api.core.v01.network.Network;
-import org.matsim.core.api.experimental.events.EventsManager;
-import org.matsim.core.router.util.TravelTime;
+import playground.clruch.dispatcher.HungarianDispatcher;
 import playground.clruch.dispatcher.HungarianUtils;
 import playground.clruch.dispatcher.core.UniversalDispatcher;
 import playground.clruch.dispatcher.core.VehicleLinkPair;
@@ -27,14 +36,8 @@ import playground.sebhoerl.avtaxi.dispatcher.AVDispatcher;
 import playground.sebhoerl.avtaxi.framework.AVModule;
 import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.NavigableMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-
 public class MultiDispatcher extends UniversalDispatcher {
-    public static final File GROUPSIZEFILE =new File("output/groupSize.mdisp.txt");
+    public static final File GROUPSIZEFILE =new File("output/groupSize.mdisp.txt"); 
 
     private final int dispatchPeriod;
     private final int numberOfGroups;
@@ -50,7 +53,7 @@ public class MultiDispatcher extends UniversalDispatcher {
                              TravelTime travelTime, //
                              ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
                              EventsManager eventsManager, //
-                             Network network, AbstractRequestSelector abstractRequestSelector) {
+                             Network network, AbstractRequestSelector abstractRequestSelector, AVDispatcher somedispatcher) {
         super(avDispatcherConfig, travelTime, parallelLeastCostPathCalculator, eventsManager);
         SafeConfig safeConfig = SafeConfig.wrap(avDispatcherConfig);
         dispatchPeriod = safeConfig.getInteger("dispatchPeriod", 10);
@@ -87,6 +90,10 @@ public class MultiDispatcher extends UniversalDispatcher {
                 .collect(Collectors.toList());
 
     }
+    
+    /*Collection<DispatchAglrotihsm> supplierD (int dispatcher){
+        
+    }*/
 
     @Override
     public void redispatch(double now) {
@@ -105,7 +112,11 @@ public class MultiDispatcher extends UniversalDispatcher {
             for (int group = 0; group < numberOfGroups; ++group) {
                 final int final_group = group;
                 // TODO try parallel
+                
+                // EXECUTION OF WHAT IS INSIDE THE REDISPATCH LOOP
                 Tensor pv1 = HungarianUtils.globalBipartiteMatching(this, () -> supplier(final_group));
+                // EXECUTION END
+                
                 printVals.append(pv1);
             }
         }
@@ -137,8 +148,11 @@ public class MultiDispatcher extends UniversalDispatcher {
         @Override
         public AVDispatcher createDispatcher(AVDispatcherConfig config, AVGeneratorConfig generatorConfig) {
             AbstractRequestSelector abstractRequestSelector = new OldestRequestSelector();
+            /*AVDispatcher theHungarian = new HungarianDispatcher(blasldkasdf);
             return new MultiDispatcher( //
-                    config, travelTime, router, eventsManager, network, abstractRequestSelector);
+                    config, travelTime, router, eventsManager, network, abstractRequestSelector,theHungarian); */
+            return null;
         }
+
     }
 }

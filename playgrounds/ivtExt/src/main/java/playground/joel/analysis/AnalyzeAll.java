@@ -38,7 +38,7 @@ public class AnalyzeAll {
     }
 
     private static void plot(String csv, String name, String title, int from, int to, Double maxRange, String data) throws Exception {
-        Tensor table = CsvFormat.parse(Files.lines(Paths.get("output/data/" + csv + ".csv")));
+        Tensor table = CsvFormat.parse(Files.lines(Paths.get("output/" + data + "/" + csv + ".csv")));
         System.out.println(Dimensions.of(table));
 
         table = Transpose.of(table);
@@ -143,7 +143,8 @@ public class AnalyzeAll {
             int lowerBound = 0;
             for (int i = 0; i < AnalysisUtils.getNumGroups(); i++) {
                 System.out.println("-------------------------------------------------------------------");
-                System.out.println("Analysis of group " + i);
+                System.out.println("Analysis of dispatcher " + i);
+                System.out.println("Size of fleet " + i + " is " + AnalysisUtils.getGroupSize(i));
                 analyzeAndPlot(config, storageSupplier, "data_" + i, //
                         lowerBound, lowerBound + AnalysisUtils.getGroupSize(i), requestVehicleIndices, vehicleGroupMap);
                 lowerBound += AnalysisUtils.getGroupSize(i);

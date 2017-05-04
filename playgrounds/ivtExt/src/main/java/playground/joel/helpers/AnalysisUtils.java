@@ -72,7 +72,6 @@ public abstract class AnalysisUtils {
             List<DispatchEvent> list = (List<DispatchEvent>) s.serializable;
             for (DispatchEvent e : list) {
                 requestVehicleIndices.put(e.requestIndex,  e.vehicleIndex);
-                if(e.requestIndex<100) System.out.println(e.requestIndex + ", " + e.vehicleIndex);
             }
         }
         return requestVehicleIndices;

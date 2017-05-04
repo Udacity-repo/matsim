@@ -1,24 +1,16 @@
 package playground.joel.dispatcher.competitive;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.NavigableMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-
-import org.matsim.api.core.v01.network.Network;
-import org.matsim.core.api.experimental.events.EventsManager;
-import org.matsim.core.router.util.TravelTime;
-
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
-
 import ch.ethz.idsc.tensor.RealScalar;
 import ch.ethz.idsc.tensor.Tensor;
 import ch.ethz.idsc.tensor.Tensors;
 import ch.ethz.idsc.tensor.alg.Array;
 import ch.ethz.idsc.tensor.io.Get;
 import ch.ethz.idsc.tensor.io.Put;
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+import org.matsim.api.core.v01.network.Network;
+import org.matsim.core.api.experimental.events.EventsManager;
+import org.matsim.core.router.util.TravelTime;
 import playground.clruch.dispatcher.HungarianUtils;
 import playground.clruch.dispatcher.core.UniversalDispatcher;
 import playground.clruch.dispatcher.core.VehicleLinkPair;
@@ -35,8 +27,14 @@ import playground.sebhoerl.avtaxi.dispatcher.AVDispatcher;
 import playground.sebhoerl.avtaxi.framework.AVModule;
 import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+
 public class MultiHungarianDispatcher extends UniversalDispatcher {
-    public static final File GROUPSIZEFILE =new File("output/groupSize.mdisp.txt"); 
+    public static final File GROUPSIZEFILE =new File("output/groupSize.mdisp.txt");
 
     private final int dispatchPeriod;
     private final int numberOfGroups;
@@ -48,20 +46,20 @@ public class MultiHungarianDispatcher extends UniversalDispatcher {
     VehicleIntegerDatabase vehicleIntegerDatabase = new VehicleIntegerDatabase();
 
     private MultiHungarianDispatcher( //
-                                      AVDispatcherConfig avDispatcherConfig, //
-                                      TravelTime travelTime, //
-                                      ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
-                                      EventsManager eventsManager, //
-                                      Network network, AbstractRequestSelector abstractRequestSelector) {
+                             AVDispatcherConfig avDispatcherConfig, //
+                             TravelTime travelTime, //
+                             ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
+                             EventsManager eventsManager, //
+                             Network network, AbstractRequestSelector abstractRequestSelector) {
         super(avDispatcherConfig, travelTime, parallelLeastCostPathCalculator, eventsManager);
         SafeConfig safeConfig = SafeConfig.wrap(avDispatcherConfig);
         dispatchPeriod = safeConfig.getInteger("dispatchPeriod", 10);
-        numberOfGroups = safeConfig.getInteger("numberOfGroups", 0);
+        numberOfGroups = safeConfig.getInteger("numberOfDispatchers", 0);
         groupSize = Array.zeros(numberOfGroups);
         int sum = 0;
         for (int group = 0; group < numberOfGroups; ++group) {
             groupBoundaries.put(sum, group);
-            int size = safeConfig.getInteger("groupSize" + group, -1);
+            int size = safeConfig.getInteger("fleetSize" + group, -1);
             GlobalAssert.that(size != -1);
             sum += size;
             groupSize.set(RealScalar.of(size), group);
