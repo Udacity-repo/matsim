@@ -47,7 +47,8 @@ public class MultiHungarianDispatcher extends UniversalDispatcher {
 
     private MultiHungarianDispatcher( //
                              AVDispatcherConfig avDispatcherConfig, //
-                             TravelTime travelTime, //
+                             AVGeneratorConfig generatorConfig, //
+                                      TravelTime travelTime, //
                              ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
                              EventsManager eventsManager, //
                              Network network, AbstractRequestSelector abstractRequestSelector) {
@@ -65,7 +66,11 @@ public class MultiHungarianDispatcher extends UniversalDispatcher {
             groupSize.set(RealScalar.of(size), group);
         }
         maxMatchNumber = safeConfig.getInteger("maxMatchNumber", Integer.MAX_VALUE);
-        // TODO check that sum == Total of groupSize == number of vehicles (at this point vehicle count is not available)
+        if (sum != generatorConfig.getNumberOfVehicles()) System.out.println( //
+                "ERROR: the dispatchers have combined only " + sum + //
+                        " vehicles, not " + generatorConfig.getNumberOfVehicles() + "!\n" + //
+                        "\tcheck that all the values in av.xml make sense!");
+        GlobalAssert.that(sum == generatorConfig.getNumberOfVehicles());
 
         try {
             Put.of(GROUPSIZEFILE, groupSize);
@@ -142,7 +147,7 @@ public class MultiHungarianDispatcher extends UniversalDispatcher {
         public AVDispatcher createDispatcher(AVDispatcherConfig config, AVGeneratorConfig generatorConfig) {
             AbstractRequestSelector abstractRequestSelector = new OldestRequestSelector();
             return new MultiHungarianDispatcher( //
-                    config, travelTime, router, eventsManager, network, abstractRequestSelector);
+                    config, generatorConfig, travelTime, router, eventsManager, network, abstractRequestSelector);
         }
     }
 }

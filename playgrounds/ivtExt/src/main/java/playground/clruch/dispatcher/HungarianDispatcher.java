@@ -22,6 +22,7 @@ import playground.sebhoerl.avtaxi.framework.AVModule;
 import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 public class HungarianDispatcher extends UniversalDispatcher {
 
@@ -49,16 +50,16 @@ public class HungarianDispatcher extends UniversalDispatcher {
                 .match(getStayVehicles(), getAVRequestsAtLinks());
 
         if (round_now % dispatchPeriod == 0) {
-            redispatchStep(round_now, getDivertableVehicles());
+            redispatchStep(round_now, () -> getDivertableVehicles());
 
         }
     }
 
-    public void redispatchStep(long round_now, Collection<VehicleLinkPair> supplier) {
+    public void redispatchStep(long round_now, Supplier<Collection<VehicleLinkPair>> supplier) {
         if (round_now == 11890) {
             System.out.println("arrived at problem");
         }
-        printVals = HungarianUtils.globalBipartiteMatching(this, () -> supplier);
+        printVals = HungarianUtils.globalBipartiteMatching(this, supplier);
     }
 
     @Override

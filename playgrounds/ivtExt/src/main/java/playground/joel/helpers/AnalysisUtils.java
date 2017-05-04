@@ -72,6 +72,7 @@ public abstract class AnalysisUtils {
             List<DispatchEvent> list = (List<DispatchEvent>) s.serializable;
             for (DispatchEvent e : list) {
                 requestVehicleIndices.put(e.requestIndex,  e.vehicleIndex);
+                System.out.println(e.requestIndex + ", " + e.vehicleIndex);
             }
         }
         return requestVehicleIndices;
@@ -93,11 +94,14 @@ public abstract class AnalysisUtils {
     }
 
     public static boolean isInGroup(int requestIndex, int from , int to, NavigableMap<Integer, Integer> requestVehicleIndices) {
-        if (!requestVehicleIndices.containsKey(requestIndex))
-            System.out.println("ERROR: No vehicle corresponding to request " + requestIndex + " found!");
-        GlobalAssert.that(requestVehicleIndices.containsKey(requestIndex));
-        int vehicleIndex = requestVehicleIndices.get(requestIndex);
-        return isInGroup(vehicleIndex, from , to);
+        if (!requestVehicleIndices.containsKey(requestIndex)) {
+            System.out.println("ATTENTION: No vehicle corresponding to request " + requestIndex + " found!\n" + //
+                    "\tThis request is probably never picked up");
+            return false;
+        } else {
+            int vehicleIndex = requestVehicleIndices.get(requestIndex);
+            return isInGroup(vehicleIndex, from, to);
+        }
     }
 
 }

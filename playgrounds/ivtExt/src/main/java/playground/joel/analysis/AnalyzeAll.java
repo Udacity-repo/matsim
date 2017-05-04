@@ -146,7 +146,8 @@ public class AnalyzeAll {
                 System.out.println("Analysis of dispatcher " + i);
                 System.out.println("Size of fleet " + i + " is " + AnalysisUtils.getGroupSize(i));
                 analyzeAndPlot(config, storageSupplier, "data_" + i, //
-                        lowerBound, lowerBound + AnalysisUtils.getGroupSize(i), requestVehicleIndices, vehicleGroupMap);
+                        lowerBound, lowerBound + AnalysisUtils.getGroupSize(i), //
+                        requestVehicleIndices, vehicleGroupMap);
                 lowerBound += AnalysisUtils.getGroupSize(i);
             }
             // TODO: handle possible remaining vehicles

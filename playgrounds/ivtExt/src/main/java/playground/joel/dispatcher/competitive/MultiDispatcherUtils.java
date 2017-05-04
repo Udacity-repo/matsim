@@ -5,6 +5,7 @@ import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.router.util.TravelTime;
 import playground.clruch.dispatcher.EdgyDispatcher;
 import playground.clruch.dispatcher.HungarianDispatcher;
+import playground.clruch.dispatcher.core.UniversalDispatcher;
 import playground.clruch.dispatcher.utils.AbstractRequestSelector;
 import playground.clruch.utils.GlobalAssert;
 import playground.joel.dispatcher.single_heuristic.NewSingleHeuristicDispatcher;

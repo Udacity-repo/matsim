@@ -2,6 +2,7 @@ package playground.joel.dispatcher.competitive;
 
 import java.io.File;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.matsim.api.core.v01.network.Network;
@@ -80,11 +81,11 @@ public class MultiDispatcher extends UniversalDispatcher {
         return vehicleIntegerDatabase.getId(avVehicle); // map must contain vehicle
     }
 
-    public Collection<VehicleLinkPair> supplier(int dispatcher) {
-        return getDivertableVehicles().stream() //
+    public Supplier<Collection<VehicleLinkPair>> supplier(int dispatcher) {
+        Supplier<Collection<VehicleLinkPair>> supplier = () -> getDivertableVehicles().stream() //
                 .filter(vlp -> groupBoundaries.lowerEntry(getVehicleIndex(vlp.avVehicle) + 1).getValue() == dispatcher) //
                 .collect(Collectors.toList());
-
+        return supplier;
     }
     
     /*Collection<DispatchAglrotihsm> supplierD (int dispatcher){
@@ -155,12 +156,26 @@ public class MultiDispatcher extends UniversalDispatcher {
             int numberOfDispatchers = safeConfig.getInteger("numberOfDispatchers", 0);
             GlobalAssert.that(numberOfDispatchers != 0);
             final HashSet<AVDispatcher> dispatchers = new HashSet<>();
+            int totalFleetSize = 0;
             for (int dispatcher = 0; dispatcher < numberOfDispatchers; ++dispatcher) {
                 String dispatcherName = safeConfig.getStringStrict("dispatcher" + dispatcher);
-                dispatchers.add(MultiDispatcherUtils.newDispatcher(dispatcherName, config, generatorConfig, //
+
+                // adapt generatorConfig
+                AVGeneratorConfig tempGeneratorConfig = new AVGeneratorConfig(generatorConfig.getParent(), generatorConfig.getStrategyName());
+                int fleetSize = safeConfig.getInteger("fleetSize" + dispatcher, -1);
+                GlobalAssert.that(fleetSize != -1);
+                tempGeneratorConfig.setNumberOfVehicles(fleetSize);
+                totalFleetSize += fleetSize;
+
+                dispatchers.add(MultiDispatcherUtils.newDispatcher(dispatcherName, config, tempGeneratorConfig, //
                         travelTime, router, eventsManager, network, abstractRequestSelector));
             }
             GlobalAssert.that(!dispatchers.isEmpty());
+            if (totalFleetSize != generatorConfig.getNumberOfVehicles()) System.out.println( //
+                    "ERROR: the dispatchers have combined only " + totalFleetSize + //
+                            " vehicles, not " + generatorConfig.getNumberOfVehicles() + "!\n" + //
+                            "\tcheck that all the values in av.xml make sense!");
+            GlobalAssert.that(totalFleetSize == generatorConfig.getNumberOfVehicles());
             return new MultiDispatcher( //
                     config, travelTime, router, eventsManager, network, abstractRequestSelector, dispatchers);
         }
