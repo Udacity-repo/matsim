@@ -36,7 +36,7 @@ public class EdgyDispatcher extends UniversalDispatcher {
     final Network network; // <- for verifying link references
     final Collection<Link> linkReferences; // <- for verifying link references
 
-    private EdgyDispatcher( //
+    public EdgyDispatcher( //
             AVDispatcherConfig avDispatcherConfig, //
             TravelTime travelTime, //
             ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
@@ -76,31 +76,36 @@ public class EdgyDispatcher extends UniversalDispatcher {
 
         final long round_now = Math.round(now);
         if (round_now % dispatchPeriod == 0) {
+            redispatchStep(now);
 
-            total_abortTrip += new DrivebyRequestStopper(this::setVehicleDiversion).realize(getAVRequestsAtLinks(),
-                    getDivertableVehicles());
+        }
 
-            { // TODO this should be replaceable by some naive matcher
-                Iterator<AVRequest> requestIterator = getAVRequests().iterator();
-                for (VehicleLinkPair vehicleLinkPair : getDivertableVehicles()) {
-                    Link dest = vehicleLinkPair.getCurrentDriveDestination();
-                    if (dest == null) { // vehicle in stay task
-                        if (requestIterator.hasNext()) {
-                            AVRequest nextRequest = requestIterator.next();
-                            Link link = nextRequest.getFromLink();
-                            // if(coordDistance(link.getCoord(),vehicleLinkPair.getDivertableLocation().getCoord())<
-                            // 3000 || nextRequest.getSubmissionTime()-now > 20*60){
-                            if (coordDistance(link.getCoord(), vehicleLinkPair.getDivertableLocation().getCoord()) < 3000
-                                    || now - nextRequest.getSubmissionTime() > 10 * 60) {
-                                setVehicleDiversion(vehicleLinkPair, link);
-                                ++total_driveOrder;
-                            }
-                        } else
-                            break;
-                    }
+    }
+
+    public void redispatchStep(double now) {
+
+        total_abortTrip += new DrivebyRequestStopper(this::setVehicleDiversion).realize(getAVRequestsAtLinks(),
+                getDivertableVehicles());
+
+        { // TODO this should be replaceable by some naive matcher
+            Iterator<AVRequest> requestIterator = getAVRequests().iterator();
+            for (VehicleLinkPair vehicleLinkPair : getDivertableVehicles()) {
+                Link dest = vehicleLinkPair.getCurrentDriveDestination();
+                if (dest == null) { // vehicle in stay task
+                    if (requestIterator.hasNext()) {
+                        AVRequest nextRequest = requestIterator.next();
+                        Link link = nextRequest.getFromLink();
+                        // if(coordDistance(link.getCoord(),vehicleLinkPair.getDivertableLocation().getCoord())<
+                        // 3000 || nextRequest.getSubmissionTime()-now > 20*60){
+                        if (coordDistance(link.getCoord(), vehicleLinkPair.getDivertableLocation().getCoord()) < 3000
+                                || now - nextRequest.getSubmissionTime() > 10 * 60) {
+                            setVehicleDiversion(vehicleLinkPair, link);
+                            ++total_driveOrder;
+                        }
+                    } else
+                        break;
                 }
             }
-
         }
 
     }

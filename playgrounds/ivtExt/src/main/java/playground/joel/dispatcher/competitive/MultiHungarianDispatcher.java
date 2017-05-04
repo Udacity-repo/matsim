@@ -101,13 +101,17 @@ public class MultiHungarianDispatcher extends UniversalDispatcher {
                 .match(getStayVehicles(), getAVRequestsAtLinks()); // TODO prelimiary correct
 
         if (round_now % dispatchPeriod == 0) {
-            printVals = Tensors.empty();
-            for (int group = 0; group < numberOfGroups; ++group) {
-                final int final_group = group;
-                // TODO try parallel
-                Tensor pv1 = HungarianUtils.globalBipartiteMatching(this, () -> supplier(final_group));
-                printVals.append(pv1);
-            }
+            dispatchStep(round_now);
+        }
+    }
+
+    public void dispatchStep(long round_now) {
+        printVals = Tensors.empty();
+        for (int group = 0; group < numberOfGroups; ++group) {
+            final int final_group = group;
+            // TODO try parallel
+            Tensor pv = HungarianUtils.globalBipartiteMatching(this, () -> supplier(final_group));
+            printVals.append(pv);
         }
     }
 

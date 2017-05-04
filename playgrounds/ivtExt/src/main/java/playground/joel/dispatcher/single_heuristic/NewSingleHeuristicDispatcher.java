@@ -37,7 +37,7 @@ public class NewSingleHeuristicDispatcher extends UniversalBindingDispatcher {
     private final QuadTree<AVVehicle> unassignedVehiclesTree;
     private final HashSet<AVVehicle> unassignedVehicles = new HashSet<>(); // two data structures are used to enable fast "contains" searching
 
-    private NewSingleHeuristicDispatcher( //
+    public NewSingleHeuristicDispatcher( //
             AVDispatcherConfig avDispatcherConfig, //
             TravelTime travelTime, //
             ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
@@ -63,36 +63,40 @@ public class NewSingleHeuristicDispatcher extends UniversalBindingDispatcher {
                 .matchPredefined(stayVehiclesAtLinks, getMatchings());
 
         if (round_now % dispatchPeriod == 0) {
+            redispatchStep();
 
-            // add open requests to search tree
-            addOpenRequests(getUnassignedAVRequests());
-            // add unassigned vehicles to search tree
-            addUnassignedVehicles(getavailableUnassignedVehicleLinkPairs());
-            
-            if(getavailableUnassignedVehicleLinkPairs().size()>0 && getUnassignedAVRequests().size()>0)
-                while (!(getavailableUnassignedVehicleLinkPairs().size()==0 || getUnassignedAVRequests().size()==0)) {
+        }
+    }
 
-                    // oversupply case
-                    if (getavailableUnassignedVehicleLinkPairs().size() >= getUnassignedAVRequests().size()) {
+    public void redispatchStep() {
+        // add open requests to search tree
+        addOpenRequests(getUnassignedAVRequests());
+        // add unassigned vehicles to search tree
+        addUnassignedVehicles(getavailableUnassignedVehicleLinkPairs());
+
+        if(getavailableUnassignedVehicleLinkPairs().size()>0 && getUnassignedAVRequests().size()>0)
+            while (!(getavailableUnassignedVehicleLinkPairs().size()==0 || getUnassignedAVRequests().size()==0)) {
+
+                // oversupply case
+                if (getavailableUnassignedVehicleLinkPairs().size() >= getUnassignedAVRequests().size()) {
                     //    System.out.println("oversupply: more unassigned vehicles than unassigned requests; " +
                     //            "(" + getavailableUnassignedVehicleLinkPairs().size() + ":" + getUnassignedAVRequests().size() + ")");
-                        AVRequest request = getUnassignedAVRequests().iterator().next();
-                        AVVehicle closestVehicle = findClosestVehicle(request, getavailableUnassignedVehicleLinkPairs());
-                        if (closestVehicle != null)
-                            sendAndRemove(request, closestVehicle);
-                    }
+                    AVRequest request = getUnassignedAVRequests().iterator().next();
+                    AVVehicle closestVehicle = findClosestVehicle(request, getavailableUnassignedVehicleLinkPairs());
+                    if (closestVehicle != null)
+                        sendAndRemove(request, closestVehicle);
+                }
 
-                    // undersupply case
-                    else {
+                // undersupply case
+                else {
                     //    System.out.println("undersupply: more unassigned requests than unassigned vehicles; " +
                     //            "(" + getavailableUnassignedVehicleLinkPairs().size() + ":" + getUnassignedAVRequests().size() + ")");
-                        VehicleLinkPair vehicleLinkPair = getavailableUnassignedVehicleLinkPairs().get(0);
-                        AVRequest closestRequest = findClosestRequest(vehicleLinkPair, getUnassignedAVRequests());
-                        if (closestRequest != null)
-                            sendAndRemove(closestRequest, vehicleLinkPair.avVehicle);
-                    }
+                    VehicleLinkPair vehicleLinkPair = getavailableUnassignedVehicleLinkPairs().get(0);
+                    AVRequest closestRequest = findClosestRequest(vehicleLinkPair, getUnassignedAVRequests());
+                    if (closestRequest != null)
+                        sendAndRemove(closestRequest, vehicleLinkPair.avVehicle);
                 }
-        }
+            }
     }
 
     /**

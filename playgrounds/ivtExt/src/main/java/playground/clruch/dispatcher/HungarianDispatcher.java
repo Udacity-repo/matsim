@@ -10,6 +10,7 @@ import com.google.inject.name.Named;
 import ch.ethz.idsc.tensor.Tensor;
 import ch.ethz.idsc.tensor.Tensors;
 import playground.clruch.dispatcher.core.UniversalDispatcher;
+import playground.clruch.dispatcher.core.VehicleLinkPair;
 import playground.clruch.dispatcher.utils.AbstractRequestSelector;
 import playground.clruch.dispatcher.utils.InOrderOfArrivalMatcher;
 import playground.clruch.dispatcher.utils.OldestRequestSelector;
@@ -20,13 +21,15 @@ import playground.sebhoerl.avtaxi.dispatcher.AVDispatcher;
 import playground.sebhoerl.avtaxi.framework.AVModule;
 import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 
+import java.util.Collection;
+
 public class HungarianDispatcher extends UniversalDispatcher {
 
     private final int dispatchPeriod;
     private final int maxMatchNumber; // implementation may not use this
     private Tensor printVals = Tensors.empty();
 
-    private HungarianDispatcher( //
+    public HungarianDispatcher( //
             AVDispatcherConfig avDispatcherConfig, //
             TravelTime travelTime, //
             ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
@@ -46,12 +49,16 @@ public class HungarianDispatcher extends UniversalDispatcher {
                 .match(getStayVehicles(), getAVRequestsAtLinks());
 
         if (round_now % dispatchPeriod == 0) {
-            if (round_now == 11890) {
-                System.out.println("arrived at problem");
-            }
-            printVals = HungarianUtils.globalBipartiteMatching(this, () -> getDivertableVehicles());
+            redispatchStep(round_now, getDivertableVehicles());
 
         }
+    }
+
+    public void redispatchStep(long round_now, Collection<VehicleLinkPair> supplier) {
+        if (round_now == 11890) {
+            System.out.println("arrived at problem");
+        }
+        printVals = HungarianUtils.globalBipartiteMatching(this, () -> supplier);
     }
 
     @Override
