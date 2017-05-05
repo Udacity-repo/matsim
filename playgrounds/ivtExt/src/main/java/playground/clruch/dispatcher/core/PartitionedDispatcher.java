@@ -122,6 +122,11 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
     }
 
     protected Map<VirtualNode, List<VehicleLinkPair>> getVirtualNodeAVStatusVehicle(Set<AVStatus> avStatusSet) {
+        // FIXME doesn't work for DRIVEWITHCUSTOMER
+        Collection<VehicleLinkPair> divertableVehicles = getDivertableVehicles();
+        Map<AVVehicle, List<VehicleLinkPair>> groupingBy = //
+                divertableVehicles.stream().collect(Collectors.groupingBy(vlp -> vlp.avVehicle));
+
         SimulationObject simulationObject = createSimulationObject((long) getTimeNow());
         MatsimStaticDatabase db = MatsimStaticDatabase.INSTANCE;
         Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
@@ -134,12 +139,18 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
                 case DRIVEWITHCUSTOMER:
                 case DRIVETOCUSTMER:
                 case REBALANCEDRIVE: {
-                    Link curr = db.getOsmLink(vc.linkIndex).link;
-                    LinkTimePair linkTimePair = new LinkTimePair(curr, getTimeNow());
+                    // Link curr = db.getOsmLink(vc.linkIndex).link;
+                    // LinkTimePair linkTimePair = new LinkTimePair(curr, getTimeNow());
                     Link dest = db.getOsmLink(vc.destinationLinkIndex).link;
                     VirtualNode virtualNode = virtualNetwork.getVirtualNode(dest);
-                    VehicleLinkPair vehicleLinkPair = new VehicleLinkPair(avVehicle, linkTimePair, dest);
-                    returnMap.get(virtualNode).add(vehicleLinkPair);
+                    // VehicleLinkPair vehicleLinkPair = new VehicleLinkPair(avVehicle, linkTimePair, dest);
+                    List<VehicleLinkPair> temp = groupingBy.get(avVehicle);
+                    if (temp != null) {
+                        VehicleLinkPair vehicleLinkPair = temp.get(0);
+                        returnMap.get(virtualNode).add(vehicleLinkPair);
+                    } else {
+                        System.out.println("bad lucky chummy");
+                    }
                     break;
                 }
                 case STAY: {

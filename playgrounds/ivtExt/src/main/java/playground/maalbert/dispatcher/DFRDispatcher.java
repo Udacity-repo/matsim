@@ -160,7 +160,9 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 // Get System State
                 //Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
                 Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles; // = getVirtualNodeOwnedVehicles();//viown
-                available_Vehicles = getVirtualNodeAVStatusVehicle(EnumSet.of(AVStatus.DRIVETOCUSTMER, AVStatus.STAY, AVStatus.REBALANCEDRIVE));
+                available_Vehicles = getVirtualNodeAVStatusVehicle(EnumSet.of( //
+                        // AVStatus.DRIVETOCUSTMER, 
+                        AVStatus.STAY, AVStatus.REBALANCEDRIVE));
                 Map<VirtualNode, Set<AVVehicle>> v_ij_reb                  = getVirtualNodeRebalancingToVehicles();
                 //Declare System State Matrices
                 Tensor rebalancingTovStation    = Array.zeros(N_vStations);
