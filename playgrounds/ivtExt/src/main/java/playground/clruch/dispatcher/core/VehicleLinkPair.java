@@ -3,6 +3,7 @@ package playground.clruch.dispatcher.core;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.contrib.dvrp.util.LinkTimePair;
 
+import playground.clruch.export.AVStatus;
 import playground.sebhoerl.avtaxi.data.AVVehicle;
 
 public class VehicleLinkPair {
@@ -18,6 +19,7 @@ public class VehicleLinkPair {
 
     public Link getDivertableLocation() {
         return linkTimePair.link;
+
     }
 
     /**

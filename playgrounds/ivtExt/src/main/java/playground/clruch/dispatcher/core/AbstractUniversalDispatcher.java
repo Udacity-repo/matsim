@@ -161,7 +161,6 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
                 if (!avDriveTask.getPath().getToLink().equals(destination)) { // ignore when vehicle is already going there
                     FuturePathContainer futurePathContainer = futurePathFactory.createFuturePathContainer( //
                             vehicleLinkPair.linkTimePair.link, destination, vehicleLinkPair.linkTimePair.time);
-
                     assignDirective(vehicleLinkPair.avVehicle, new DriveVehicleDiversionDirective( //
                             vehicleLinkPair, destination, futurePathContainer));
                 } else

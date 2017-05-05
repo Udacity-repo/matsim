@@ -131,8 +131,9 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
                         .findAny().isPresent());
 
                 // ensure that not more vehicles are sent away than available
-                Tensor feasibleRebalanceCount = FeasibleRebalanceCreator.returnFeasibleRebalance(rebalanceCount.unmodifiable(),
-                        availableVehicles);
+                //Tensor feasibleRebalanceCount = FeasibleRebalanceCreator.returnFeasibleRebalance(rebalanceCount.unmodifiable(),
+                //        availableVehicles);
+                Tensor feasibleRebalanceCount = rebalanceCount;
                 total_rebalanceCount += (Integer) ((Scalar) Total.of(Tensor.of(feasibleRebalanceCount.flatten(-1)))).number();
 
                 // generate routing instructions for rebalancing vehicles
@@ -151,8 +152,8 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
                 // consistency check: rebalancing destination links must not exceed available
                 // vehicles in virtual node
                 Map<VirtualNode, List<VehicleLinkPair>> finalAvailableVehicles = availableVehicles;
-                GlobalAssert.that(!virtualNetwork.getVirtualNodes().stream()
-                        .filter(v -> finalAvailableVehicles.get(v).size() < destinationLinks.get(v).size()).findAny().isPresent());
+               // GlobalAssert.that(!virtualNetwork.getVirtualNodes().stream()
+                //        .filter(v -> finalAvailableVehicles.get(v).size() < destinationLinks.get(v).size()).findAny().isPresent());
 
                 // send rebalancing vehicles using the setVehicleRebalance command
                 for (VirtualNode virtualNode : destinationLinks.keySet()) {
@@ -162,13 +163,72 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
                 }
 
             }
-        }
 
-        // Part II: outside rebalancing periods, permanently assign desitnations to vehicles using
-        // bipartite matching
-        if (round_now % redispatchPeriod == 0) {
-            printVals = HungarianUtils.globalBipartiteMatching(this, () -> getVirtualNodeDivertableNotRebalancingVehicles().values()
-                    .stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
+            // Part II: outside rebalancing periods, permanently assign desitnations to vehicles using
+            // bipartite matching
+//        if (round_now % redispatchPeriod == 0) {
+//            printVals = HungarianUtils.globalBipartiteMatching(this, () -> getVirtualNodeDivertableNotRebalancingVehicles().values()
+//                    .stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
+//        }
+            if (round_now % redispatchPeriod == 0) {
+                // II.ii if vehilces remain in vNode, send to customers
+                {
+
+                    // collect destinations per vNode
+                    Map<VirtualNode, List<Link>> destinationLinks = createvNodeLinksMap();
+
+
+
+                    for (VirtualNode vNode : virtualNetwork.getVirtualNodes()) {
+                        destinationLinks.get(vNode).addAll( // stores from links
+                                requests.get(vNode).stream().map(AVRequest::getFromLink).collect(Collectors.toList()));
+                    }
+
+                    // collect available vehicles per vNode
+                    String Matching = "As before";
+                    // String Matching = "FIFO";
+                    Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = null;
+                    switch (Matching) {
+                        case "As before":
+                            available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
+                            break;
+                        case "FIFO":
+                            available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
+                            //available_Vehicles = getVirtualNodeAvailableVehicles();
+                            for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes()) {
+                                int size = available_Vehicles.get(virtualNode).size();
+                                int reqs = destinationLinks.get(virtualNode).size();
+                                destinationLinks.put(virtualNode, //
+                                        destinationLinks.get(virtualNode).subList(0, Math.min(reqs, size)));
+                            }
+                            break;
+                    }
+
+                    // assign destinations to the available vehicles
+                    String MatchCustomer = "Local";
+                    //String MatchCustomer = "Global";
+
+                        switch (MatchCustomer) {
+                            case "Local": {
+                                GlobalAssert.that(available_Vehicles.keySet().containsAll(virtualNetwork.getVirtualNodes()));
+                                GlobalAssert.that(destinationLinks.keySet().containsAll(virtualNetwork.getVirtualNodes()));
+
+                                // DO NOT PUT PARALLEL anywhere in this loop !
+                                for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes())
+                                    vehicleDestMatcher //
+                                           .match(available_Vehicles.get(virtualNode), destinationLinks.get(virtualNode)) //
+                                           .entrySet().stream().forEach(this::setVehicleDiversion);
+                            }
+                            break;
+                            case "Global": {
+                                printVals = HungarianUtils.globalBipartiteMatching(this, () -> getVirtualNodeDivertableNotRebalancingVehicles().values()
+                                        .stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
+
+                            }
+                        }
+
+                }
+            }
         }
     }
 

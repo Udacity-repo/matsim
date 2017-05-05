@@ -153,7 +153,8 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 // Initialize
                 //------------------------------------------------------------------------------------------------------
                 // Get System State
-                Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
+                //Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
+                Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = getVirtualNodeOwnedVehicles();//viown
                 Map<VirtualNode, Set<AVVehicle>> v_ij_reb                  = getVirtualNodeRebalancingToVehicles();
                 //Declare System State Matrices
                 Tensor rebalancingTovStation    = Array.zeros(N_vStations);
@@ -168,7 +169,8 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 //------------------------------------------------------------------------------------------------------
                 // System Imbalance
                 //------------------------------------------------------------------------------------------------------
-                Tensor systemImbalance = openRequests.subtract(availableVehicles).subtract(rebalancingTovStation);
+                //Tensor systemImbalance = openRequests.subtract(availableVehicles).subtract(rebalancingTovStation);
+                Tensor systemImbalance = openRequests.subtract(availableVehicles);//Viown
                 //------------------------------------------------------------------------------------------------------
                 // System Wait Times
                 //------------------------------------------------------------------------------------------------------
@@ -250,6 +252,7 @@ public class DFRDispatcher extends PartitionedDispatcher {
                         double linkWeight = entry.getValue();
                         int indexFrom     = vLink.getFrom().getIndex();
                         int indexTo       = vLink.getTo().getIndex();
+                        double Tij        = entry.getKey().getTtime();
                         //Get Imbalance
                         double imbalanceFrom = systemImbalance.Get(indexFrom).number().doubleValue(); //potentially leave as scalar
                         double imbalanceTo   = systemImbalance.Get(indexTo).number().doubleValue();
@@ -280,12 +283,17 @@ public class DFRDispatcher extends PartitionedDispatcher {
                                                                     diff_rest;
                                     break;
                                 }
+//                                case LW:{
+//                                    rebalance_From_To = rebalancingPeriod * (diff_alphaij + //
+//                                            linkWeight * (waitTimesTo - waitTimesFrom)) + //
+//                                            diff_rest;
+//                                    break;
+//                                }
                                 case LW:{
                                     rebalance_From_To = rebalancingPeriod * (diff_alphaij + //
-                                            linkWeight * (waitTimesTo - waitTimesFrom)) + //
+                                            linkWeight * (imbalanceTo - imbalanceTo))/Tij + //
                                             diff_rest;
                                     break;
-
                                 }
                                 case LX: {
                                     rebalance_From_To = rebalancingPeriod * (diff_alphaij + //
@@ -319,6 +327,12 @@ public class DFRDispatcher extends PartitionedDispatcher {
 //                    Tensor rebalancingOrder = Round.of(feedback_Rebalancing_DFR);
                 Tensor rebalancingOrder = Floor.of(feedback_Rebalancing_DFR);
                     rebalancingOrderRest = feedback_Rebalancing_DFR.subtract(rebalancingOrder);
+
+                    if (Total.of(Total.of(rebalancingOrder)).Get().number().intValue()!=0){
+                        int dummy = 0;
+                    }
+
+                   // rebalancingOrder = Array.zeros(N_vStations,N_vStations);
 
 //                //DEBUG START
 //                System.out.println("Rebalancing Tensor:\n" + Pretty.of(rebalancingOrder));
@@ -369,18 +383,16 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 }
 
 
-                // consistency check: rebalancing destination links must not exceed available vehicles in virtual node
-            //    if (virtualNetwork.getVirtualNodes().stream().filter(v -> available_Vehicles.get(v).size() < destinationLinks.get(v).size()).findAny().isPresent()) {
-            //        System.out.print("too many verhilces sent;");
-            //    }
-
                 // send rebalancing vehicles using the setVehicleRebalance command
                 // TODO Count Rebalanced cars correctly!
                 // What happens if to many vehicles sent? does it send the ones it has and over or none if?or what happens here?
                 for (VirtualNode virtualNode : destinationLinks.keySet()) {
                     Map<VehicleLinkPair, Link> rebalanceMatching = vehicleDestMatcher.match(available_Vehicles.get(virtualNode), destinationLinks.get(virtualNode));
                     rebalanceMatching.keySet().forEach(v -> setVehicleRebalance(v, rebalanceMatching.get(v)));
+                    int dummy2 = 0;
                 }
+               // available_Vehicles = getVirtualNodeOwnedVehicles();
+                int dummy3 = 0;
             }
         }
         //==========================================================================================================
@@ -393,23 +405,23 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 // collect destinations per vNode
                 Map<VirtualNode, List<Link>> destinationLinks = createvNodeLinksMap();
 
-                long tStart = System.currentTimeMillis();
-
                 for (VirtualNode vNode : virtualNetwork.getVirtualNodes()) {
                     destinationLinks.get(vNode).addAll( // stores from links
                             requests.get(vNode).stream().map(AVRequest::getFromLink).collect(Collectors.toList()));
                 }
 
                 // collect available vehicles per vNode
-               // String Matching = "As before";
-                String Matching = "FIFO Bipartite";
+                String Matching = "As before";
+               //String Matching = "FIFO";
                 Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = null;
                 switch (Matching) {
                 case "As before":
-                    available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
+                    //available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
+                    available_Vehicles = getVirtualNodeOwnedVehicles();//viown
                     break;
-                case "FIFO Bipartite":
-                    available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
+                case "FIFO":
+                    //available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
+                    available_Vehicles = getVirtualNodeOwnedVehicles();//viown
                     for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes()) {
                         int size = available_Vehicles.get(virtualNode).size();
                         int reqs = destinationLinks.get(virtualNode).size();
@@ -420,26 +432,28 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 }
 
                 // assign destinations to the available vehicles
+                String MatchCustomer = "Local";
+                //String MatchCustomer = "Global";
                 {
-                    GlobalAssert.that(available_Vehicles.keySet().containsAll(virtualNetwork.getVirtualNodes()));
-                    GlobalAssert.that(destinationLinks.keySet().containsAll(virtualNetwork.getVirtualNodes()));
+                    switch (MatchCustomer) {
+                        case "Local": {
+                            GlobalAssert.that(available_Vehicles.keySet().containsAll(virtualNetwork.getVirtualNodes()));
+                            GlobalAssert.that(destinationLinks.keySet().containsAll(virtualNetwork.getVirtualNodes()));
 
-                    // DO NOT PUT PARALLEL anywhere in this loop !
-                    for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes())
-                        vehicleDestMatcher //
-                                .match(available_Vehicles.get(virtualNode), destinationLinks.get(virtualNode)) //
-                                .entrySet().stream().forEach(this::setVehicleDiversion);
+                            // DO NOT PUT PARALLEL anywhere in this loop !
+                            for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes())
+                                vehicleDestMatcher //
+                                        .match(available_Vehicles.get(virtualNode), destinationLinks.get(virtualNode)) //
+                                        .entrySet().stream().forEach(this::setVehicleDiversion);
+                        }
+                        break;
+                        case "Global": {
+                            printVals = HungarianUtils.globalBipartiteMatching(this, () -> getVirtualNodeDivertableNotRebalancingVehicles().values()
+                                    .stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
+
+                        }
+                    }
                 }
-
-                //TIME DISPLAY
-                long tEnd = System.currentTimeMillis();
-                long tDelta = tEnd - tStart;
-                double elapsedSeconds = tDelta / 1000.0;
-
-                System.out.print("Time to do all the mathcings: "+ Double.toString(elapsedSeconds)+"\n");
-
-//                printVals = HungarianUtils.globalBipartiteMatching(this, () -> getVirtualNodeDivertableNotRebalancingVehicles().values()
-//                        .stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
             }
         }
     }

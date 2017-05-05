@@ -1,25 +1,26 @@
 package playground.clruch.dispatcher.core;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.matsim.api.core.v01.network.Link;
+import org.matsim.contrib.dvrp.schedule.Schedule;
+import org.matsim.contrib.dvrp.schedule.Schedules;
+import org.matsim.contrib.dvrp.tracker.OnlineDriveTaskTracker;
+import org.matsim.contrib.dvrp.tracker.TaskTracker;
+import org.matsim.contrib.dvrp.util.LinkTimePair;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.router.util.TravelTime;
 
 import playground.clruch.netdata.VirtualNetwork;
 import playground.clruch.netdata.VirtualNode;
+import playground.clruch.utils.AVTaskAdapter;
 import playground.clruch.utils.GlobalAssert;
 import playground.sebhoerl.avtaxi.config.AVDispatcherConfig;
 import playground.sebhoerl.avtaxi.data.AVVehicle;
 import playground.sebhoerl.avtaxi.passenger.AVRequest;
+import playground.sebhoerl.avtaxi.schedule.AVDriveTask;
+import playground.sebhoerl.avtaxi.schedule.AVStayTask;
 import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 
 /**
@@ -54,6 +55,53 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
         }
         return returnMap;
     }
+
+    /**
+     * @return returns the vehicles owned per virtualNode TODO issue of assignDirective for rebalancing cars not solved
+     */
+    protected Map<VirtualNode, List<VehicleLinkPair>> getVirtualNodeOwnedVehicles() {
+        long tStart = System.currentTimeMillis();
+
+        Collection<VehicleLinkPair> divertableVehicles = getDivertableVehicles();
+        Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
+
+        for (VehicleLinkPair vlp : divertableVehicles){
+            if (vlp.getCurrentDriveDestination()!=null) {
+                VirtualNode virtualNodeCurrentDriveDestination = virtualNetwork.getVirtualNode(vlp.getCurrentDriveDestination());
+                List<VehicleLinkPair> tmp = returnMap.get(virtualNodeCurrentDriveDestination);
+                if (tmp != null)
+                    tmp.add(vlp);
+                else{
+                    tmp = new ArrayList<>();
+                    tmp.add(vlp);
+                }
+                returnMap.put(virtualNodeCurrentDriveDestination, tmp);
+            }else {
+                VirtualNode virtualNodeDivertableLocation = virtualNetwork.getVirtualNode(vlp.getDivertableLocation());
+                List<VehicleLinkPair> tmp = returnMap.get(virtualNodeDivertableLocation);
+                if (tmp != null)
+                    tmp.add(vlp);
+                else{
+                    tmp = new ArrayList<>();
+                    tmp.add(vlp);
+            }
+                returnMap.put(virtualNodeDivertableLocation, tmp);
+            }
+        }
+
+        for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes()) {
+            if (!returnMap.containsKey(virtualNode)) {
+                returnMap.put(virtualNode, Collections.emptyList());
+            }
+        }
+
+        long tEnd = System.currentTimeMillis();
+        long tDelta = tEnd - tStart;
+        System.out.println("Time New Thing "+ Double.toString(tDelta));
+
+        return returnMap;
+    }
+
 
     /**
      * @return <VirtualNode, Set<AVVehicle>> with the rebalancing vehicles AVVehicle rebalancing to every node VirtualNode
