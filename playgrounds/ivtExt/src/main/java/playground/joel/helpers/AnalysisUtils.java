@@ -1,15 +1,17 @@
 package playground.joel.helpers;
 
+import ch.ethz.idsc.tensor.RealScalar;
 import ch.ethz.idsc.tensor.Tensor;
 import ch.ethz.idsc.tensor.Tensors;
+import ch.ethz.idsc.tensor.alg.Array;
 import ch.ethz.idsc.tensor.io.Get;
+import ch.ethz.idsc.tensor.io.Put;
 import playground.clruch.net.DispatchEvent;
 import playground.clruch.net.SimulationObject;
 import playground.clruch.net.StorageSupplier;
 import playground.clruch.utils.GlobalAssert;
+import playground.joel.analysis.AnalyzeAll;
 
-import java.io.File;
-import java.io.Serializable;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -19,7 +21,8 @@ import java.util.TreeMap;
  * Created by Joel on 01.05.2017.
  */
 public abstract class AnalysisUtils {
-    final static File GROUPSIZEFILE = new File("output/groupSize.mdisp.txt");
+    private static int fails = 0;
+    private static int maxFails = 50;
 
     public static int getNumVehicles(StorageSupplier storageSupplier) throws Exception{
         SimulationObject init = storageSupplier.getSimulationObject(1);
@@ -34,9 +37,9 @@ public abstract class AnalysisUtils {
 
     public static Tensor getGroupSizes() {
         Tensor sizes = Tensors.empty();
-        if(GROUPSIZEFILE.exists() && !GROUPSIZEFILE.isDirectory()) {
+        if(AnalyzeAll.GROUPSIZEFILE.exists() && !AnalyzeAll.GROUPSIZEFILE.isDirectory()) {
             try {
-                sizes = Get.of(GROUPSIZEFILE);
+                sizes = Get.of(AnalyzeAll.GROUPSIZEFILE);
             } catch (Exception exception) {
                 exception.printStackTrace();
                 GlobalAssert.that(false);
@@ -53,7 +56,8 @@ public abstract class AnalysisUtils {
     }
 
     public static int getGroup(int vehicleIndex, NavigableMap<Integer, Integer> vehicleGroupMap) {
-        return vehicleGroupMap.floorEntry(vehicleIndex).getValue();
+        if (vehicleGroupMap.size() == 0) return 0;
+        else return vehicleGroupMap.floorEntry(vehicleIndex).getValue();
     }
 
     public static int getGroup(int requestIndex, NavigableMap<Integer, Integer> requestVehicleIndices, //
@@ -65,15 +69,28 @@ public abstract class AnalysisUtils {
         return getGroup(vehicleIndex, vehicleGroupMap);
     }
 
-    public static NavigableMap<Integer, Integer> createRequestVehicleIndices(StorageSupplier storageSupplier) throws Exception {
+    public static NavigableMap<Integer, Integer> createRequestVehicleIndices( //
+            StorageSupplier storageSupplier, NavigableMap<Integer, Integer> vehicleGroupMap) throws Exception {
         NavigableMap<Integer, Integer> requestVehicleIndices = new TreeMap<>();
+        Tensor trips = Array.zeros(getNumGroups() > 0 ? getNumGroups() : 1);
         for (int index = 0; index < storageSupplier.size(); ++index) {
             SimulationObject s = storageSupplier.getSimulationObject(index);
             List<DispatchEvent> list = (List<DispatchEvent>) s.serializable;
             for (DispatchEvent e : list) {
                 requestVehicleIndices.put(e.requestIndex,  e.vehicleIndex);
                 System.out.println(e.requestIndex + ", " + e.vehicleIndex);
+                int group = getGroup(e.vehicleIndex, vehicleGroupMap);
+                int current = trips.Get(group).number().intValue();
+                trips.set(RealScalar.of(current + 1), getGroup(e.vehicleIndex, vehicleGroupMap));
             }
+        }
+        try {
+            Put.of(AnalyzeAll.TRIPCOUNTERFILE, trips);
+            Tensor check = Get.of(AnalyzeAll.TRIPCOUNTERFILE);
+            GlobalAssert.that(trips.equals(check));
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            GlobalAssert.that(false);
         }
         return requestVehicleIndices;
     }
@@ -95,8 +112,16 @@ public abstract class AnalysisUtils {
 
     public static boolean isInGroup(int requestIndex, int from , int to, NavigableMap<Integer, Integer> requestVehicleIndices) {
         if (!requestVehicleIndices.containsKey(requestIndex)) {
-            System.out.println("ATTENTION: No vehicle corresponding to request " + requestIndex + " found!\n" + //
-                    "\tThis request is probably never picked up");
+            if (fails < maxFails) {
+                System.out.println("ATTENTION: No vehicle corresponding to request " + requestIndex + " found!\n" + //
+                        "\tThis request is probably never picked up.");
+                fails++;
+            }
+            if (fails == maxFails) {
+                System.out.println("ATTENTION: Many requests are never picked up!\n" + //
+                        "\tNo further attentions of this type will be displayed.");
+                fails++;
+            }
             return false;
         } else {
             int vehicleIndex = requestVehicleIndices.get(requestIndex);

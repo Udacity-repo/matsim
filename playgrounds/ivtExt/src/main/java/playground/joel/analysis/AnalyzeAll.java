@@ -27,6 +27,11 @@ import playground.joel.helpers.AnalysisUtils;
  * Created by Joel on 05.04.2017.
  */
 public class AnalyzeAll {
+    public final static File GROUPSIZEFILE = new File("output/groupSize.mdisp.txt");
+    public static final File TRIPCOUNTERFILE = new File("output/tripCounter.txt");
+    public static final boolean filter = false;
+
+
     public static void main(String[] args) throws Exception {
         analyze(args);
     }
@@ -45,7 +50,7 @@ public class AnalyzeAll {
 
         try {
             File dir = new File("output/" + data);
-            DiagramCreator.createDiagram(dir, name, title, table.get(0), table.extract(from, to), maxRange);
+            DiagramCreator.createDiagram(dir, name, title, table.get(0), table.extract(from, to), maxRange, filter);
         } catch (Exception e) {
             System.out.println("Error creating the diagrams");
         }
@@ -135,8 +140,8 @@ public class AnalyzeAll {
         final int size = storageSupplier.size();
         System.out.println("found files: " + size);
 
-        NavigableMap<Integer, Integer> requestVehicleIndices = AnalysisUtils.createRequestVehicleIndices(storageSupplier);
         NavigableMap<Integer, Integer> vehicleGroupMap = AnalysisUtils.createVehicleGroupMap();
+        NavigableMap<Integer, Integer> requestVehicleIndices = AnalysisUtils.createRequestVehicleIndices(storageSupplier, vehicleGroupMap);
 
         analyzeAndPlot(config, storageSupplier, "data", requestVehicleIndices, vehicleGroupMap);
         if (AnalysisUtils.getNumGroups() != 0) {

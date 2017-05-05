@@ -3,6 +3,8 @@ package playground.joel.analysis;
 import java.awt.Color;
 import java.io.File;
 
+import ch.ethz.idsc.tensor.RealScalar;
+import ch.ethz.idsc.tensor.Tensors;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
@@ -27,12 +29,17 @@ public class DiagramCreator {
         return second;
     }
 
-    public static void createDiagram(File directory, String fileTitle, String diagramTitle, Tensor time, Tensor values) throws Exception {
-        createDiagram(directory, fileTitle, diagramTitle, time, values, 1.1);
+    public static void createDiagram(File directory, String fileTitle, String diagramTitle, Tensor time, Tensor values, boolean filter) throws Exception {
+        createDiagram(directory, fileTitle, diagramTitle, time, values, 1.1, filter);
     }
 
-    public static void createDiagram(File directory, String fileTitle, String diagramTitle, Tensor time, Tensor values, Double maxRange) throws Exception {
+    public static void createDiagram(File directory, String fileTitle, String diagramTitle, Tensor time, Tensor values) throws Exception {
+        createDiagram(directory, fileTitle, diagramTitle, time, values, 1.1, false);
+    }
+
+    public static void createDiagram(File directory, String fileTitle, String diagramTitle, Tensor time, Tensor values, Double maxRange, boolean filter) throws Exception {
         final TimeSeriesCollection dataset = new TimeSeriesCollection();
+        values = filter(values, time, 3, filter);
         for (int i = 0; i < values.length(); i++) {
             final TimeSeries series = new TimeSeries("time series " + i);
             for (int j = 0; j < time.length(); j++) {
@@ -57,4 +64,46 @@ public class DiagramCreator {
         GlobalAssert.that(timeChart.exists() && !timeChart.isDirectory());
         System.out.println("exported " + fileTitle + ".png");
     }
+
+    public static void createDiagram(File directory, String fileTitle, String diagramTitle, Tensor time, Tensor values, Double maxRange) throws Exception {
+        createDiagram(directory, fileTitle, diagramTitle, time, values, maxRange, false);
+    }
+
+    /**
+     * this function applies a standard moving average filter of length size to values //
+     * if filter is set to true in AnalyzeAll
+     *
+     * @param values
+     * @param size
+     */
+    public static Tensor filter(Tensor values, Tensor time, int size, boolean filter) {
+        if (filter) {
+            Tensor temp = Tensors.empty();
+            temp = values;
+            int offset = (int) (size / 2.0);
+            for (int i = 0; i < values.length(); i++) {
+                for (int j = size % 2 == 0 ? offset - 1 : offset; j < time.length() - offset; j++) {
+                    double sum = 0;
+                    for (int k = 0; k < size; k++) {
+                        if (size % 2 == 0) {
+                            sum += values.Get(i, j - offset + k + 1).number().doubleValue();
+                        } else {
+                            sum += values.Get(i, j - offset + k).number().doubleValue();
+                        }
+                    }
+                    temp.set(RealScalar.of(sum / size), i, j);
+                }
+            }
+            if (temp.Get(0).length() == values.Get(0).length() && //
+                    temp.Get(1).length() == values.Get(1).length())
+                return temp;
+            else {
+                GlobalAssert.that(false);
+                return null;
+            }
+        } else {
+            return values;
+        }
+    }
+
 }
