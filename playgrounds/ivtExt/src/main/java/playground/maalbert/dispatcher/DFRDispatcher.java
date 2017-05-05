@@ -10,6 +10,7 @@ package playground.maalbert.dispatcher;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,7 +34,9 @@ import ch.ethz.idsc.tensor.red.Total;
 import ch.ethz.idsc.tensor.sca.Ceiling;
 import ch.ethz.idsc.tensor.sca.Floor;
 import ch.ethz.idsc.tensor.sca.Round;
+import playground.clruch.dispatcher.HungarianUtils;
 import playground.clruch.dispatcher.core.PartitionedDispatcher;
+import playground.clruch.dispatcher.core.RebalancingDispatcher;
 import playground.clruch.dispatcher.core.VehicleLinkPair;
 import playground.clruch.dispatcher.utils.AbstractRequestSelector;
 import playground.clruch.dispatcher.utils.AbstractVehicleDestMatcher;
@@ -193,6 +196,8 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 System.out.println("System Imbalance  : " + systemImbalance.toString());
                 Tensor dispWaitTimes = Round.of(waitTimes);
                 System.out.println("Mean Wait Times   : " + dispWaitTimes.toString());
+                System.out.println("Total Available Vehicles: " + Total.of(availableVehicles).toString());
+                System.out.println("Total OpenRequests Vehicles: " + Total.of(openRequests).toString());
                 //DEBUG END
                 //======================================================================================================
                 // DFR Iterations: Compute Rebalancing
@@ -252,7 +257,7 @@ public class DFRDispatcher extends PartitionedDispatcher {
                         double linkWeight = entry.getValue();
                         int indexFrom     = vLink.getFrom().getIndex();
                         int indexTo       = vLink.getTo().getIndex();
-                        double Tij        = entry.getKey().getTtime();
+                        double Tij        = entry.getKey().getTtime()/400;//Divide by max approx max travel time s.t. not too small wieghts
                         //Get Imbalance
                         double imbalanceFrom = systemImbalance.Get(indexFrom).number().doubleValue(); //potentially leave as scalar
                         double imbalanceTo   = systemImbalance.Get(indexTo).number().doubleValue();
@@ -328,9 +333,6 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 Tensor rebalancingOrder = Floor.of(feedback_Rebalancing_DFR);
                     rebalancingOrderRest = feedback_Rebalancing_DFR.subtract(rebalancingOrder);
 
-                    if (Total.of(Total.of(rebalancingOrder)).Get().number().intValue()!=0){
-                        int dummy = 0;
-                    }
 
                    // rebalancingOrder = Array.zeros(N_vStations,N_vStations);
 
@@ -389,10 +391,7 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 for (VirtualNode virtualNode : destinationLinks.keySet()) {
                     Map<VehicleLinkPair, Link> rebalanceMatching = vehicleDestMatcher.match(available_Vehicles.get(virtualNode), destinationLinks.get(virtualNode));
                     rebalanceMatching.keySet().forEach(v -> setVehicleRebalance(v, rebalanceMatching.get(v)));
-                    int dummy2 = 0;
                 }
-               // available_Vehicles = getVirtualNodeOwnedVehicles();
-                int dummy3 = 0;
             }
         }
         //==========================================================================================================
@@ -401,7 +400,6 @@ public class DFRDispatcher extends PartitionedDispatcher {
         if (round_now % redispatchPeriod == 0){
         // II.ii if vehilces remain in vNode, send to customers
             {
-
                 // collect destinations per vNode
                 Map<VirtualNode, List<Link>> destinationLinks = createvNodeLinksMap();
 
@@ -418,6 +416,9 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 case "As before":
                     //available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
                     available_Vehicles = getVirtualNodeOwnedVehicles();//viown
+                    //VIOWN v2
+                   // Map<VirtualNode, List<VehicleLinkPair>> rebalancingVehicles = getVirtualNodeDivertableNotRebalancingVehicles();
+                   // Map<VirtualNode, List<VehicleLinkPair>> stayVehicles        = stay
                     break;
                 case "FIFO":
                     //available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();

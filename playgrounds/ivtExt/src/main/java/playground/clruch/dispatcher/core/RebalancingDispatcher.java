@@ -17,7 +17,7 @@ import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 public abstract class RebalancingDispatcher extends UniversalDispatcher {
     
     private final Map<AVVehicle, Link> rebalancingVehicles = new HashMap<>();
-    protected boolean nonStrict = false;
+    protected boolean nonStrict = true;
     
     protected RebalancingDispatcher(AVDispatcherConfig avDispatcherConfig, TravelTime travelTime,
             ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, EventsManager eventsManager) {

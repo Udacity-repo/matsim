@@ -152,7 +152,7 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
                 // consistency check: rebalancing destination links must not exceed available
                 // vehicles in virtual node
                 Map<VirtualNode, List<VehicleLinkPair>> finalAvailableVehicles = availableVehicles;
-               // GlobalAssert.that(!virtualNetwork.getVirtualNodes().stream()
+               // GlobalAssert.that(!virtualNetwork.getVirtualNodes().stream() //doesnt work well?
                 //        .filter(v -> finalAvailableVehicles.get(v).size() < destinationLinks.get(v).size()).findAny().isPresent());
 
                 // send rebalancing vehicles using the setVehicleRebalance command

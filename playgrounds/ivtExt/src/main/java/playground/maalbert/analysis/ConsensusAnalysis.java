@@ -55,10 +55,10 @@ class ConsensusAnalysis {
         Tensor Q50waitTimes  = Tensors.empty();
         Tensor Q95waitTimes  = Tensors.empty();
         //Imbalance Analysis
-        Tensor openRequests        = Tensors.empty();
-        Tensor systemImbalance     = Tensors.empty();
-        Tensor availableVehicles   = Tensors.empty();
-        Tensor rebalancingVehicles = Tensors.empty();
+        Tensor openRequests         = Tensors.empty();
+        Tensor systemImbalance      = Tensors.empty();
+        Tensor availableVehicles    = Tensors.empty();
+        Tensor withCustomerVehicles = Tensors.empty();
 
 
         //DEBUG START
@@ -96,8 +96,11 @@ class ConsensusAnalysis {
                 Tensor Q10waitTimes_tmp  = Tensors.empty();
                 Tensor Q50waitTimes_tmp  = Tensors.empty();
                 Tensor Q95waitTimes_tmp  = Tensors.empty();
-                Tensor openRequests_tmp    = Tensors.empty();
-                Tensor systemImbalance_tmp = Tensors.empty();
+                Tensor openRequests_tmp          = Tensors.empty();
+                Tensor systemImbalance_tmp       = Tensors.empty();
+                Tensor availableVehciles_tmp     = Tensors.empty();
+                Tensor withCustomerVechicles_tmp = Tensors.empty();
+
 
                 for (int i = 0; i < N_vStations; i++) {
                     //Get wait times per vNode
@@ -126,11 +129,16 @@ class ConsensusAnalysis {
                             virtualNetwork.getVirtualNode(rev_linkIntegerMap.get(v.destinationLinkIndex))== vStation).count());
                     Scalar drive2custVehicles_i =  RealScalar.of(s.vehicles.stream().filter(v->v.avStatus == AVStatus.DRIVETOCUSTMER && //
                             virtualNetwork.getVirtualNode(rev_linkIntegerMap.get(v.destinationLinkIndex))== vStation).count());
+                    //Hom many people in station with customer
+                    Scalar withCustomerVechicles_i =  RealScalar.of(s.vehicles.stream().filter(v->v.avStatus == AVStatus.DRIVEWITHCUSTOMER && //
+                            virtualNetwork.getVirtualNode(rev_linkIntegerMap.get(v.linkIndex))== vStation).count());
+
 
                     Scalar availableVehicles_i  = stayVehicles_i.add(drive2custVehicles_i); //divertableNotRebalancingVehicles
                     Scalar systemImbalance_i    = openRequests_i.subtract(availableVehicles_i).subtract(rebalanceVehicles_i);
 
-
+                    withCustomerVechicles_tmp.append(withCustomerVechicles_i);
+                    availableVehciles_tmp.append(availableVehicles_i.add(rebalanceVehicles_i));
                     systemImbalance_tmp.append(systemImbalance_i);
                     openRequests_tmp.append(openRequests_i);
                 }
@@ -140,6 +148,8 @@ class ConsensusAnalysis {
                 Q95waitTimes.append(Q95waitTimes_tmp);
                 openRequests.append(openRequests_tmp);
                 systemImbalance.append(systemImbalance_tmp);
+                availableVehicles.append(availableVehciles_tmp);
+                withCustomerVehicles.append(withCustomerVechicles_tmp);
             }
 
             //==========================================================================================================
@@ -153,6 +163,8 @@ class ConsensusAnalysis {
             AnalyzeMarc.saveFile(Q50waitTimes,"Q50WaitTimes");
             AnalyzeMarc.saveFile(Q95waitTimes,"Q95WaitTimes");
             AnalyzeMarc.saveFile(openRequests,"NoRequests");
+            AnalyzeMarc.saveFile(availableVehicles,"AvailableVehicles");
+            AnalyzeMarc.saveFile(withCustomerVehicles,"WcustomerVehicles");
             AnalyzeMarc.saveFile(systemImbalance,"systemImbalance");
         }
         System.out.print("Done.\n");

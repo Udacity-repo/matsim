@@ -57,16 +57,34 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
     }
 
     /**
+     * @return returns the divertable vehicles per virtualNode TODO
+     */
+    protected Map<VirtualNode, List<VehicleLinkPair>> getVirtualNodeStayAndRebalancingVehicles() {
+        Collection<VehicleLinkPair> divertableVehicles = getDivertableVehicles();
+        Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
+        Map<VirtualNode, Set<AVVehicle>> rebalancingTovS = getVirtualNodeRebalancingToVehicles();
+        Map<Link, Queue<AVVehicle>> stayLink         = getStayVehicles();
+        Map<VirtualNode, Queue<AVVehicle>> stayVs = new HashMap<>();
+
+
+
+        for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes()) {
+            if (!returnMap.containsKey(virtualNode)) {
+                returnMap.put(virtualNode, Collections.emptyList());
+            }
+        }
+        return returnMap;
+    }
+
+    /**
      * @return returns the vehicles owned per virtualNode TODO issue of assignDirective for rebalancing cars not solved
      */
     protected Map<VirtualNode, List<VehicleLinkPair>> getVirtualNodeOwnedVehicles() {
-        long tStart = System.currentTimeMillis();
-
-        Collection<VehicleLinkPair> divertableVehicles = getDivertableVehicles();
+        Collection<VehicleLinkPair> divertableVehicles = getDivertableVehicles(); // including rebalancing veh
         Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
 
         for (VehicleLinkPair vlp : divertableVehicles){
-            if (vlp.getCurrentDriveDestination()!=null) {
+            if (vlp.getCurrentDriveDestination()!=null) { // Not stay
                 VirtualNode virtualNodeCurrentDriveDestination = virtualNetwork.getVirtualNode(vlp.getCurrentDriveDestination());
                 List<VehicleLinkPair> tmp = returnMap.get(virtualNodeCurrentDriveDestination);
                 if (tmp != null)
@@ -76,7 +94,7 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
                     tmp.add(vlp);
                 }
                 returnMap.put(virtualNodeCurrentDriveDestination, tmp);
-            }else {
+            }else { // stay
                 VirtualNode virtualNodeDivertableLocation = virtualNetwork.getVirtualNode(vlp.getDivertableLocation());
                 List<VehicleLinkPair> tmp = returnMap.get(virtualNodeDivertableLocation);
                 if (tmp != null)
@@ -94,10 +112,6 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
                 returnMap.put(virtualNode, Collections.emptyList());
             }
         }
-
-        long tEnd = System.currentTimeMillis();
-        long tDelta = tEnd - tStart;
-        System.out.println("Time New Thing "+ Double.toString(tDelta));
 
         return returnMap;
     }

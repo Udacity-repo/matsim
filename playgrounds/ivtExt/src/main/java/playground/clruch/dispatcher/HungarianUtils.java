@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.network.Link;
 
 import ch.ethz.idsc.tensor.Tensor;
@@ -22,7 +23,7 @@ import playground.clruch.simonton.MyTree;
 import playground.clruch.utils.GlobalAssert;
 import playground.sebhoerl.avtaxi.passenger.AVRequest;
 
-enum HungarianUtils {
+public enum HungarianUtils {
     ;
     // ---
     public static Tensor globalBipartiteMatching(UniversalDispatcher dispatcher, Supplier<Collection<VehicleLinkPair>> supplier) {
@@ -91,6 +92,10 @@ enum HungarianUtils {
         }
     }
 
+    private static Coord refCoord(Link link) {
+        return link.getCoord();
+    }
+
     private static List<Link> reduceRequestsKDTree(List<Link> requestlocs, Collection<VehicleLinkPair> divertableVehicles) {
         // for less requests than cars, don't do anything
         if (requestlocs.size() < divertableVehicles.size())
@@ -107,8 +112,8 @@ enum HungarianUtils {
         // add uniquely identifiable requests to KD tree
         int reqIter = 0;
         for (Link link : requestlocs) {
-            double d1 = link.getFromNode().getCoord().getX();
-            double d2 = link.getFromNode().getCoord().getY();
+            double d1 = refCoord(link).getX();
+            double d2 = refCoord(link).getY();
             GlobalAssert.that(Double.isFinite(d1));
             GlobalAssert.that(Double.isFinite(d2));
             KDTree.add(new double[] { d1, d2 }, new RequestWithID(link, reqIter));
@@ -122,8 +127,9 @@ enum HungarianUtils {
         do {
             requestsChosen.clear();
             for (VehicleLinkPair vehicleLinkPair : divertableVehicles) {
-                double[] vehLoc = new double[] { vehicleLinkPair.getDivertableLocation().getToNode().getCoord().getX(),
-                        vehicleLinkPair.getDivertableLocation().getToNode().getCoord().getY() };
+                double[] vehLoc = new double[] { //
+                        refCoord(vehicleLinkPair.getDivertableLocation()).getX(),
+                        refCoord(vehicleLinkPair.getDivertableLocation()).getY() };
                 Cluster<RequestWithID> nearestCluster = KDTree.buildCluster(vehLoc, iter, new EuclideanDistancer());
                 nearestCluster.getValues().stream().forEach(v -> requestsChosen.put(v, v.link));
             }
@@ -156,8 +162,8 @@ enum HungarianUtils {
         // add uniquely identifiable requests to KD tree
         int vehIter = 0;
         for (VehicleLinkPair vehicleLinkPair : divertableVehicles) {
-            double d1 = vehicleLinkPair.getDivertableLocation().getToNode().getCoord().getX();
-            double d2 = vehicleLinkPair.getDivertableLocation().getToNode().getCoord().getY();
+            double d1 = refCoord(vehicleLinkPair.getDivertableLocation()).getX();
+            double d2 = refCoord(vehicleLinkPair.getDivertableLocation()).getY();
             GlobalAssert.that(Double.isFinite(d1));
             GlobalAssert.that(Double.isFinite(d2));
             KDTree.add(new double[] { d1, d2 }, vehicleLinkPair);
@@ -171,7 +177,9 @@ enum HungarianUtils {
         do {
             vehiclesChosen.clear();
             for (Link link : requestlocs) {
-                double[] reqloc = new double[] { link.getFromNode().getCoord().getX(), link.getFromNode().getCoord().getY() };
+                double[] reqloc = new double[] { //
+                        refCoord(link).getX(), //
+                        refCoord(link).getY() };
                 Cluster<VehicleLinkPair> nearestCluster = KDTree.buildCluster(reqloc, iter, new EuclideanDistancer());
                 nearestCluster.getValues().stream().forEach(v -> vehiclesChosen.add(v));
             }
