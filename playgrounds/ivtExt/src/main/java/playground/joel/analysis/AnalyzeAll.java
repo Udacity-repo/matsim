@@ -44,7 +44,7 @@ public class AnalyzeAll {
 
     private static void plot(String csv, String name, String title, int from, int to, Double maxRange, String data) throws Exception {
         Tensor table = CsvFormat.parse(Files.lines(Paths.get("output/" + data + "/" + csv + ".csv")));
-        System.out.println(Dimensions.of(table));
+        // System.out.println(Dimensions.of(table));
 
         table = Transpose.of(table);
 
@@ -52,7 +52,7 @@ public class AnalyzeAll {
             File dir = new File("output/" + data);
             DiagramCreator.createDiagram(dir, name, title, table.get(0), table.extract(from, to), maxRange, filter);
         } catch (Exception e) {
-            System.out.println("Error creating the diagrams");
+            System.out.println("ERROR: Failed to create the " + title + " diagram!");
         }
     }
 

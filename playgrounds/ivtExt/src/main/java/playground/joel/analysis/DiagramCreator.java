@@ -5,6 +5,7 @@ import java.io.File;
 
 import ch.ethz.idsc.tensor.RealScalar;
 import ch.ethz.idsc.tensor.Tensors;
+import ch.ethz.idsc.tensor.alg.Dimensions;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
@@ -78,10 +79,9 @@ public class DiagramCreator {
      */
     public static Tensor filter(Tensor values, Tensor time, int size, boolean filter) {
         if (filter) {
-            Tensor temp = Tensors.empty();
-            temp = values;
+            Tensor temp = values.copy();
             int offset = (int) (size / 2.0);
-            for (int i = 0; i < values.length(); i++) {
+            for (int i = 0; i < Dimensions.of(values).get(0); i++) {
                 for (int j = size % 2 == 0 ? offset - 1 : offset; j < time.length() - offset; j++) {
                     double sum = 0;
                     for (int k = 0; k < size; k++) {
@@ -94,12 +94,11 @@ public class DiagramCreator {
                     temp.set(RealScalar.of(sum / size), i, j);
                 }
             }
-            if (temp.Get(0).length() == values.Get(0).length() && //
-                    temp.Get(1).length() == values.Get(1).length())
+            if (Dimensions.of(temp) == Dimensions.of(values))
                 return temp;
             else {
                 GlobalAssert.that(false);
-                return null;
+                return values;
             }
         } else {
             return values;

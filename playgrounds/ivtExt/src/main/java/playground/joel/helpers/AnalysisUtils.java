@@ -78,7 +78,7 @@ public abstract class AnalysisUtils {
             List<DispatchEvent> list = (List<DispatchEvent>) s.serializable;
             for (DispatchEvent e : list) {
                 requestVehicleIndices.put(e.requestIndex,  e.vehicleIndex);
-                System.out.println(e.requestIndex + ", " + e.vehicleIndex);
+                // System.out.println(e.requestIndex + ", " + e.vehicleIndex);
                 int group = getGroup(e.vehicleIndex, vehicleGroupMap);
                 int current = trips.Get(group).number().intValue();
                 trips.set(RealScalar.of(current + 1), getGroup(e.vehicleIndex, vehicleGroupMap));
