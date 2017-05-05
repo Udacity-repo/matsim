@@ -8,7 +8,7 @@ import playground.sebhoerl.avtaxi.data.AVVehicle;
 
 public class VehicleIntegerDatabase {
     private final Map<String, Integer> map = new HashMap<>();
-
+    
     /**
      * @param string
      *            is vehicle id as string
@@ -21,7 +21,17 @@ public class VehicleIntegerDatabase {
         if (!map.containsKey(string)) {
             // System.out.println("ID=[" + string + "] -> " + value);
             map.put(string, value);
+            lookup.put(value, avVehicle);
         }
         return map.get(string);
     }
+
+    // -------------------------------------------------------------------
+    // TODO reorder later
+    private final Map<Integer, AVVehicle> lookup = new HashMap<>();
+    
+    AVVehicle getAVVehicleFromIndex(int index) {
+        return lookup.get(index);
+    }
+
 }

@@ -112,6 +112,10 @@ public class MatsimStaticDatabase {
         return vehicleIdIntegerDatabase.getId(avVehicle);
     }
 
+    public AVVehicle getAVVehicleFromIndex(int index) {
+        return vehicleIdIntegerDatabase.getAVVehicleFromIndex(index);
+    }
+
     void setIteration(Integer iteration) {
         this.iteration = iteration;
         // System.out.println("set iteration=" + iteration);

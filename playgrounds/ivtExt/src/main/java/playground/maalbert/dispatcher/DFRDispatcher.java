@@ -8,6 +8,7 @@
 package playground.maalbert.dispatcher;
 
 import java.io.File;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -46,6 +47,7 @@ import playground.clruch.dispatcher.utils.HungarBiPartVehicleDestMatcher;
 import playground.clruch.dispatcher.utils.InOrderOfArrivalMatcher;
 import playground.clruch.dispatcher.utils.KMeansVirtualNodeDest;
 import playground.clruch.dispatcher.utils.OldestRequestSelector;
+import playground.clruch.export.AVStatus;
 import playground.clruch.netdata.VirtualLink;
 import playground.clruch.netdata.VirtualNetwork;
 import playground.clruch.netdata.VirtualNetworkIO;
@@ -157,7 +159,8 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 //------------------------------------------------------------------------------------------------------
                 // Get System State
                 //Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
-                Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles = getVirtualNodeOwnedVehicles();//viown
+                Map<VirtualNode, List<VehicleLinkPair>> available_Vehicles; // = getVirtualNodeOwnedVehicles();//viown
+                available_Vehicles = getVirtualNodeAVStatusVehicle(EnumSet.of(AVStatus.DRIVETOCUSTMER, AVStatus.STAY, AVStatus.REBALANCEDRIVE));
                 Map<VirtualNode, Set<AVVehicle>> v_ij_reb                  = getVirtualNodeRebalancingToVehicles();
                 //Declare System State Matrices
                 Tensor rebalancingTovStation    = Array.zeros(N_vStations);
@@ -416,14 +419,16 @@ public class DFRDispatcher extends PartitionedDispatcher {
                 switch (Matching) {
                 case "As before":
                     //available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
-                    available_Vehicles = getVirtualNodeOwnedVehicles();//viown
+//                    available_Vehicles = getVirtualNodeOwnedVehicles();//viown
+                    available_Vehicles = getVirtualNodeAVStatusVehicle(EnumSet.of(AVStatus.DRIVETOCUSTMER, AVStatus.STAY, AVStatus.REBALANCEDRIVE));
                     //VIOWN v2
                    // Map<VirtualNode, List<VehicleLinkPair>> rebalancingVehicles = getVirtualNodeDivertableNotRebalancingVehicles();
                    // Map<VirtualNode, List<VehicleLinkPair>> stayVehicles        = stay
                     break;
                 case "FIFO":
                     //available_Vehicles = getVirtualNodeDivertableNotRebalancingVehicles();
-                    available_Vehicles = getVirtualNodeOwnedVehicles();//viown
+//                    available_Vehicles = getVirtualNodeOwnedVehicles();//viown
+                    available_Vehicles = getVirtualNodeAVStatusVehicle(EnumSet.of(AVStatus.DRIVETOCUSTMER, AVStatus.STAY, AVStatus.REBALANCEDRIVE));
                     for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes()) {
                         int size = available_Vehicles.get(virtualNode).size();
                         int reqs = destinationLinks.get(virtualNode).size();

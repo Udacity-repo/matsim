@@ -1,5 +1,6 @@
 package playground.clruch.dispatcher.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,10 +20,13 @@ import org.matsim.contrib.dvrp.util.LinkTimePair;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.router.util.TravelTime;
 
+import playground.clruch.export.AVStatus;
+import playground.clruch.net.MatsimStaticDatabase;
 import playground.clruch.net.SimulationDistribution;
 import playground.clruch.net.SimulationObject;
 import playground.clruch.net.SimulationObjectCompiler;
 import playground.clruch.net.SimulationObjects;
+import playground.clruch.net.VehicleContainer;
 import playground.clruch.router.FuturePathContainer;
 import playground.clruch.router.FuturePathFactory;
 import playground.clruch.utils.AVLocation;
@@ -95,9 +99,9 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
             }
             if (AVVEHILCECOUNT == null)
                 AVVEHILCECOUNT = vehicleLocations.size();
-            // TODO this check was taken out because the zurich scenario doesn't satisfy this :-( 
-//            GlobalAssert.that(AVVEHILCECOUNT == collection.size());
-//            GlobalAssert.that(AVVEHILCECOUNT == vehicleLocations.size());
+            // TODO this check was taken out because the zurich scenario doesn't satisfy this :-(
+            // GlobalAssert.that(AVVEHILCECOUNT == collection.size());
+            // GlobalAssert.that(AVVEHILCECOUNT == vehicleLocations.size());
         }
         // if (0 < failed)
         // System.out.println("failed to extract location for " + failed + " vehicles");
@@ -135,12 +139,9 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
      * @param avRequest
      *            provided by getAVRequests()
      */
-    
+
     abstract protected void setAcceptRequest(AVVehicle avVehicle, AVRequest avRequest);
-    
-    
-    
-    
+
     /**
      * assigns new destination to vehicle.
      * if vehicle is already located at destination, nothing happens.
@@ -190,7 +191,6 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
         // default implementation: for now, do nothing
     }
 
-
     abstract public void onRequestSubmitted(AVRequest request);
 
     /**
@@ -226,6 +226,37 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
         simulationObjectCompiler.addVehiclesWithCustomer(getVehiclesWithCustomer(), vehicleLocations);
         simulationObjectCompiler.addRebalancingVehicles(getRebalancingVehicles(), vehicleLocations);
         return simulationObjectCompiler.compile(getDivertableVehicles(), vehicleLocations);
+    }
+
+    @Deprecated
+    private List<VehicleLinkPair> getAVStatusVehicles(Set<AVStatus> avStatusSet) {
+        SimulationObject simulationObject = createSimulationObject((long) getTimeNow());
+        MatsimStaticDatabase db = MatsimStaticDatabase.INSTANCE;
+        final List<VehicleLinkPair> list = new ArrayList<>();
+        for (VehicleContainer vc : simulationObject.vehicles) {
+            if (avStatusSet.contains(vc.avStatus)) {
+                switch (vc.avStatus) {
+                case DRIVEWITHCUSTOMER: {
+                    break;
+                }
+                case DRIVETOCUSTMER: {
+                    break;
+                }
+                case REBALANCEDRIVE: {
+                    break;
+                }
+                case STAY: {
+                    Link link = db.getOsmLink(vc.destinationLinkIndex).link;
+                    LinkTimePair linkTimePair = new LinkTimePair(link, getTimeNow());
+                    AVVehicle avVehicle = db.getAVVehicleFromIndex(vc.vehicleIndex);
+                    VehicleLinkPair vehicleLinkPair = new VehicleLinkPair(avVehicle, linkTimePair, null);
+                    list.add(vehicleLinkPair);
+                    break;
+                }
+                }
+            }
+        }
+        return list;
     }
 
     @Override

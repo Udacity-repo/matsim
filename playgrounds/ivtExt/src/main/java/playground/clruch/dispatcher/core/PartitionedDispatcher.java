@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.matsim.api.core.v01.network.Link;
+import org.matsim.contrib.dvrp.util.LinkTimePair;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.router.util.TravelTime;
 
@@ -120,39 +121,39 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
         return returnMap;
     }
 
-    protected Map<VirtualNode, List<VehicleLinkPair>> getSome(Set<AVStatus> avStatusSet) {
-        SimulationObject simulationObject = createSimulationObject(-1);
+    protected Map<VirtualNode, List<VehicleLinkPair>> getVirtualNodeAVStatusVehicle(Set<AVStatus> avStatusSet) {
+        SimulationObject simulationObject = createSimulationObject((long) getTimeNow());
         MatsimStaticDatabase db = MatsimStaticDatabase.INSTANCE;
         Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
         for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes())
             returnMap.put(virtualNode, new ArrayList<>());
-
         for (VehicleContainer vc : simulationObject.vehicles) {
             if (avStatusSet.contains(vc.avStatus)) {
+                final AVVehicle avVehicle = db.getAVVehicleFromIndex(vc.vehicleIndex);
                 switch (vc.avStatus) {
-                case DRIVEWITHCUSTOMER: {
-                    VirtualNode virtualNode = virtualNetwork.getVirtualNode(db.getOsmLink(vc.destinationLinkIndex).link);
-                    break;
-                }
-                case DRIVETOCUSTMER: {
-                    VirtualNode virtualNode = virtualNetwork.getVirtualNode(db.getOsmLink(vc.destinationLinkIndex).link);
-                    break;
-                }
+                case DRIVEWITHCUSTOMER:
+                case DRIVETOCUSTMER:
                 case REBALANCEDRIVE: {
-                    VirtualNode virtualNode = virtualNetwork.getVirtualNode(db.getOsmLink(vc.destinationLinkIndex).link);
+                    Link curr = db.getOsmLink(vc.linkIndex).link;
+                    LinkTimePair linkTimePair = new LinkTimePair(curr, getTimeNow());
+                    Link dest = db.getOsmLink(vc.destinationLinkIndex).link;
+                    VirtualNode virtualNode = virtualNetwork.getVirtualNode(dest);
+                    VehicleLinkPair vehicleLinkPair = new VehicleLinkPair(avVehicle, linkTimePair, dest);
+                    returnMap.get(virtualNode).add(vehicleLinkPair);
                     break;
                 }
                 case STAY: {
-                    VirtualNode virtualNode = virtualNetwork.getVirtualNode(db.getOsmLink(vc.destinationLinkIndex).link);
+                    Link link = db.getOsmLink(vc.linkIndex).link;
+                    VirtualNode virtualNode = virtualNetwork.getVirtualNode(link);
+                    LinkTimePair linkTimePair = new LinkTimePair(link, getTimeNow());
+                    VehicleLinkPair vehicleLinkPair = new VehicleLinkPair(avVehicle, linkTimePair, null);
+                    returnMap.get(virtualNode).add(vehicleLinkPair);
                     break;
                 }
                 }
-
-                // returnMap.get(virtualNode).add()
             }
         }
-
-        return null;
+        return returnMap;
     }
 
     /**
