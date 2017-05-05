@@ -38,7 +38,7 @@ class CoreAnalysis {
 
     static Tensor quantiles(Tensor submission) {
         if (submission.length()>0) {
-            return Quantile.of(submission, Tensors.vectorDouble(.1, .5, .95));
+            return Quantile.of(submission, Tensors.vectorDouble(.1, .5, .90));
         } else {
             return Array.zeros(3);
         }

@@ -219,16 +219,19 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
         return link;
     }
 
+    protected SimulationObject createSimulationObject(long round_now) {
+        SimulationObjectCompiler simulationObjectCompiler = SimulationObjectCompiler.create( //
+                round_now, getInfoLine(), total_matchedRequests);
+        simulationObjectCompiler.addRequests(getAVRequests());
+        simulationObjectCompiler.addVehiclesWithCustomer(getVehiclesWithCustomer(), vehicleLocations);
+        simulationObjectCompiler.addRebalancingVehicles(getRebalancingVehicles(), vehicleLocations);
+        return simulationObjectCompiler.compile(getDivertableVehicles(), vehicleLocations);
+    }
+
     @Override
     final void notifySimulationSubscribers(long round_now) {
         if (round_now % publishPeriod == 0) {
-            SimulationObjectCompiler simulationObjectCompiler = SimulationObjectCompiler.create( //
-                    round_now, getInfoLine(), total_matchedRequests);
-            simulationObjectCompiler.addRequests(getAVRequests());
-            simulationObjectCompiler.addVehiclesWithCustomer(getVehiclesWithCustomer(), vehicleLocations);
-            simulationObjectCompiler.addRebalancingVehicles(getRebalancingVehicles(), vehicleLocations);
-            SimulationObject simulationObject = simulationObjectCompiler.compile( //
-                    getDivertableVehicles(), vehicleLocations);
+            SimulationObject simulationObject = createSimulationObject(round_now);
 
             // in the first pass, the vehicles is typically empty
             // in that case, the simObj will not be stored or communicated

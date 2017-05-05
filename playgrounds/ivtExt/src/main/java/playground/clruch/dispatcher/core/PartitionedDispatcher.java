@@ -12,6 +12,10 @@ import org.matsim.contrib.dvrp.util.LinkTimePair;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.router.util.TravelTime;
 
+import playground.clruch.export.AVStatus;
+import playground.clruch.net.MatsimStaticDatabase;
+import playground.clruch.net.SimulationObject;
+import playground.clruch.net.VehicleContainer;
 import playground.clruch.netdata.VirtualNetwork;
 import playground.clruch.netdata.VirtualNode;
 import playground.clruch.utils.AVTaskAdapter;
@@ -61,9 +65,16 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
      */
     protected Map<VirtualNode, List<VehicleLinkPair>> getVirtualNodeStayAndRebalancingVehicles() {
         Collection<VehicleLinkPair> divertableVehicles = getDivertableVehicles();
+
+
         Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
         Map<VirtualNode, Set<AVVehicle>> rebalancingTovS = getVirtualNodeRebalancingToVehicles();
         Map<Link, Queue<AVVehicle>> stayLink         = getStayVehicles();
+
+
+
+
+
         Map<VirtualNode, Queue<AVVehicle>> stayVs = new HashMap<>();
 
 
@@ -116,6 +127,23 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
         return returnMap;
     }
 
+    protected Map<VirtualNode,List<VehicleLinkPair>> getSome(Set<AVStatus> avStatusSet) {
+        SimulationObject simulationObject = createSimulationObject(-1);
+        MatsimStaticDatabase db = MatsimStaticDatabase.INSTANCE;
+        Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
+        for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes())
+            returnMap.put(virtualNode, new ArrayList<>());
+
+        for (VehicleContainer vc : simulationObject.vehicles) {
+            if(avStatusSet.contains(  vc.avStatus)) {
+                VirtualNode virtualNode = virtualNetwork.getVirtualNode(
+                db.getOsmLink(vc.destinationLinkIndex).link);
+                //returnMap.get(virtualNode).add()
+            }
+        }
+
+        return null;
+    }
 
     /**
      * @return <VirtualNode, Set<AVVehicle>> with the rebalancing vehicles AVVehicle rebalancing to every node VirtualNode

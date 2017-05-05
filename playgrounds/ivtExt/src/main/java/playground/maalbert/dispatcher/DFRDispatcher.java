@@ -375,6 +375,7 @@ public class DFRDispatcher extends PartitionedDispatcher {
                     for (int rebalanceToidx = 0; rebalanceToidx < N_vStations; rebalanceToidx++) {
 
                         int rebalanceCars = feasibleRebalanceOrder.Get(rebalanceFromidx, rebalanceToidx).number().intValue();
+                        GlobalAssert.that(rebalanceCars==0 || rebalanceFromidx!=rebalanceToidx);
                         if (rebalanceCars != 0) {
                             VirtualNode rebalanceFromvNode = virtualNetwork.getVirtualNode(rebalanceFromidx);
                             VirtualNode rebalanceTovNode = virtualNetwork.getVirtualNode(rebalanceToidx);
