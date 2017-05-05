@@ -1,14 +1,17 @@
 package playground.clruch.dispatcher.core;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.contrib.dvrp.schedule.Schedule;
-import org.matsim.contrib.dvrp.schedule.Schedules;
-import org.matsim.contrib.dvrp.tracker.OnlineDriveTaskTracker;
-import org.matsim.contrib.dvrp.tracker.TaskTracker;
-import org.matsim.contrib.dvrp.util.LinkTimePair;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.router.util.TravelTime;
 
@@ -18,13 +21,10 @@ import playground.clruch.net.SimulationObject;
 import playground.clruch.net.VehicleContainer;
 import playground.clruch.netdata.VirtualNetwork;
 import playground.clruch.netdata.VirtualNode;
-import playground.clruch.utils.AVTaskAdapter;
 import playground.clruch.utils.GlobalAssert;
 import playground.sebhoerl.avtaxi.config.AVDispatcherConfig;
 import playground.sebhoerl.avtaxi.data.AVVehicle;
 import playground.sebhoerl.avtaxi.passenger.AVRequest;
-import playground.sebhoerl.avtaxi.schedule.AVDriveTask;
-import playground.sebhoerl.avtaxi.schedule.AVStayTask;
 import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 
 /**
@@ -41,7 +41,7 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
             VirtualNetwork virtualNetwork) {
         super(config, travelTime, router, eventsManager);
         this.virtualNetwork = virtualNetwork;
-        GlobalAssert.that(virtualNetwork!=null);
+        GlobalAssert.that(virtualNetwork != null);
     }
 
     /**
@@ -66,18 +66,11 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
     protected Map<VirtualNode, List<VehicleLinkPair>> getVirtualNodeStayAndRebalancingVehicles() {
         Collection<VehicleLinkPair> divertableVehicles = getDivertableVehicles();
 
-
         Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
         Map<VirtualNode, Set<AVVehicle>> rebalancingTovS = getVirtualNodeRebalancingToVehicles();
-        Map<Link, Queue<AVVehicle>> stayLink         = getStayVehicles();
-
-
-
-
+        Map<Link, Queue<AVVehicle>> stayLink = getStayVehicles();
 
         Map<VirtualNode, Queue<AVVehicle>> stayVs = new HashMap<>();
-
-
 
         for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes()) {
             if (!returnMap.containsKey(virtualNode)) {
@@ -94,26 +87,26 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
         Collection<VehicleLinkPair> divertableVehicles = getDivertableVehicles(); // including rebalancing veh
         Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
 
-        for (VehicleLinkPair vlp : divertableVehicles){
-            if (vlp.getCurrentDriveDestination()!=null) { // Not stay
+        for (VehicleLinkPair vlp : divertableVehicles) {
+            if (vlp.getCurrentDriveDestination() != null) { // Not stay
                 VirtualNode virtualNodeCurrentDriveDestination = virtualNetwork.getVirtualNode(vlp.getCurrentDriveDestination());
                 List<VehicleLinkPair> tmp = returnMap.get(virtualNodeCurrentDriveDestination);
                 if (tmp != null)
                     tmp.add(vlp);
-                else{
+                else {
                     tmp = new ArrayList<>();
                     tmp.add(vlp);
                 }
                 returnMap.put(virtualNodeCurrentDriveDestination, tmp);
-            }else { // stay
+            } else { // stay
                 VirtualNode virtualNodeDivertableLocation = virtualNetwork.getVirtualNode(vlp.getDivertableLocation());
                 List<VehicleLinkPair> tmp = returnMap.get(virtualNodeDivertableLocation);
                 if (tmp != null)
                     tmp.add(vlp);
-                else{
+                else {
                     tmp = new ArrayList<>();
                     tmp.add(vlp);
-            }
+                }
                 returnMap.put(virtualNodeDivertableLocation, tmp);
             }
         }
@@ -127,7 +120,7 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
         return returnMap;
     }
 
-    protected Map<VirtualNode,List<VehicleLinkPair>> getSome(Set<AVStatus> avStatusSet) {
+    protected Map<VirtualNode, List<VehicleLinkPair>> getSome(Set<AVStatus> avStatusSet) {
         SimulationObject simulationObject = createSimulationObject(-1);
         MatsimStaticDatabase db = MatsimStaticDatabase.INSTANCE;
         Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
@@ -135,10 +128,27 @@ public abstract class PartitionedDispatcher extends RebalancingDispatcher {
             returnMap.put(virtualNode, new ArrayList<>());
 
         for (VehicleContainer vc : simulationObject.vehicles) {
-            if(avStatusSet.contains(  vc.avStatus)) {
-                VirtualNode virtualNode = virtualNetwork.getVirtualNode(
-                db.getOsmLink(vc.destinationLinkIndex).link);
-                //returnMap.get(virtualNode).add()
+            if (avStatusSet.contains(vc.avStatus)) {
+                switch (vc.avStatus) {
+                case DRIVEWITHCUSTOMER: {
+                    VirtualNode virtualNode = virtualNetwork.getVirtualNode(db.getOsmLink(vc.destinationLinkIndex).link);
+                    break;
+                }
+                case DRIVETOCUSTMER: {
+                    VirtualNode virtualNode = virtualNetwork.getVirtualNode(db.getOsmLink(vc.destinationLinkIndex).link);
+                    break;
+                }
+                case REBALANCEDRIVE: {
+                    VirtualNode virtualNode = virtualNetwork.getVirtualNode(db.getOsmLink(vc.destinationLinkIndex).link);
+                    break;
+                }
+                case STAY: {
+                    VirtualNode virtualNode = virtualNetwork.getVirtualNode(db.getOsmLink(vc.destinationLinkIndex).link);
+                    break;
+                }
+                }
+
+                // returnMap.get(virtualNode).add()
             }
         }
 
