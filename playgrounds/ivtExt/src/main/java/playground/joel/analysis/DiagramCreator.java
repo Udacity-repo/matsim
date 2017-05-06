@@ -21,6 +21,8 @@ import playground.clruch.utils.GlobalAssert;
  */
 public class DiagramCreator {
 
+    public static final int filterSize = 30;
+
     static Second toTime(double time) {
         int days = (int) (time / 86400) + 1;
         int hours = (int) (time / 3600) - (days - 1) * 24;
@@ -30,17 +32,20 @@ public class DiagramCreator {
         return second;
     }
 
-    public static void createDiagram(File directory, String fileTitle, String diagramTitle, Tensor time, Tensor values, boolean filter) throws Exception {
+    public static void createDiagram(File directory, String fileTitle, String diagramTitle, //
+                                     Tensor time, Tensor values, boolean filter) throws Exception {
         createDiagram(directory, fileTitle, diagramTitle, time, values, 1.1, filter);
     }
 
-    public static void createDiagram(File directory, String fileTitle, String diagramTitle, Tensor time, Tensor values) throws Exception {
+    public static void createDiagram(File directory, String fileTitle, String diagramTitle, //
+                                     Tensor time, Tensor values) throws Exception {
         createDiagram(directory, fileTitle, diagramTitle, time, values, 1.1, false);
     }
 
-    public static void createDiagram(File directory, String fileTitle, String diagramTitle, Tensor time, Tensor values, Double maxRange, boolean filter) throws Exception {
+    public static void createDiagram(File directory, String fileTitle, String diagramTitle, //
+                                     Tensor time, Tensor values, Double maxRange, boolean filter) throws Exception {
         final TimeSeriesCollection dataset = new TimeSeriesCollection();
-        values = filter(values, time, 3, filter);
+        values = filter(values, time, filterSize, filter);
         for (int i = 0; i < values.length(); i++) {
             final TimeSeries series = new TimeSeries("time series " + i);
             for (int j = 0; j < time.length(); j++) {
@@ -52,7 +57,8 @@ public class DiagramCreator {
             dataset.addSeries(series);
         }
 
-        JFreeChart timechart = ChartFactory.createTimeSeriesChart(diagramTitle, "Time", "Value", dataset, false, false, false);
+        JFreeChart timechart = ChartFactory.createTimeSeriesChart(diagramTitle, //
+                "Time", "Value", dataset, false, false, false);
         timechart.getXYPlot().getRangeAxis().setRange(0, maxRange);
         timechart.getPlot().setBackgroundPaint(Color.white);
         timechart.getXYPlot().setRangeGridlinePaint(Color.lightGray);
@@ -66,7 +72,8 @@ public class DiagramCreator {
         System.out.println("exported " + fileTitle + ".png");
     }
 
-    public static void createDiagram(File directory, String fileTitle, String diagramTitle, Tensor time, Tensor values, Double maxRange) throws Exception {
+    public static void createDiagram(File directory, String fileTitle, String diagramTitle, //
+                                     Tensor time, Tensor values, Double maxRange) throws Exception {
         createDiagram(directory, fileTitle, diagramTitle, time, values, maxRange, false);
     }
 
@@ -84,22 +91,23 @@ public class DiagramCreator {
             for (int i = 0; i < Dimensions.of(values).get(0); i++) {
                 for (int j = size % 2 == 0 ? offset - 1 : offset; j < time.length() - offset; j++) {
                     double sum = 0;
-                    for (int k = 0; k < size; k++) {
+                    for (int k = size % 2 == 0 ? -offset + 1 : -offset; k <= offset; k++) {
                         if (size % 2 == 0) {
-                            sum += values.Get(i, j - offset + k + 1).number().doubleValue();
+                            sum += values.Get(i, j + k).number().doubleValue();
                         } else {
-                            sum += values.Get(i, j - offset + k).number().doubleValue();
+                            sum += values.Get(i, j + k).number().doubleValue();
                         }
                     }
                     temp.set(RealScalar.of(sum / size), i, j);
                 }
             }
-            if (Dimensions.of(temp) == Dimensions.of(values))
+            // TODO: fix the following check or omit it
+            //if (Dimensions.of(temp) == Dimensions.of(values)) {
                 return temp;
-            else {
+            /*} else {
                 GlobalAssert.that(false);
                 return values;
-            }
+            }*/
         } else {
             return values;
         }

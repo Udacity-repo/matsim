@@ -24,17 +24,31 @@ public abstract class AnalysisUtils {
     private static int fails = 0;
     private static int maxFails = 50;
 
+    /**
+     *
+     * @param storageSupplier
+     * @return the total number of vehicles
+     * @throws Exception
+     */
     public static int getNumVehicles(StorageSupplier storageSupplier) throws Exception{
         SimulationObject init = storageSupplier.getSimulationObject(1);
         return init.vehicles.size();
     }
 
+    /**
+     *
+     * @return the number of dispatcher groups
+     */
     public static int getNumGroups() {
         if (getGroupSizes() != Tensors.empty())
             return getGroupSizes().length();
         else return 0;
     }
 
+    /**
+     *
+     * @return the fleet sizes listed in a tensor
+     */
     public static Tensor getGroupSizes() {
         Tensor sizes = Tensors.empty();
         if(AnalyzeAll.GROUPSIZEFILE.exists() && !AnalyzeAll.GROUPSIZEFILE.isDirectory()) {
@@ -48,6 +62,11 @@ public abstract class AnalysisUtils {
         return sizes;
     }
 
+    /**
+     *
+     * @param group
+     * @return the fleet size of dispatcher number group
+     */
     public static int getGroupSize(int group) {
         Tensor sizes = getGroupSizes();
         GlobalAssert.that(group < sizes.length());
@@ -55,11 +74,24 @@ public abstract class AnalysisUtils {
         return size;
     }
 
+    /**
+     *
+     * @param vehicleIndex
+     * @param vehicleGroupMap
+     * @return the number of the dispatcher the vehicle belongs to
+     */
     public static int getGroup(int vehicleIndex, NavigableMap<Integer, Integer> vehicleGroupMap) {
         if (vehicleGroupMap.size() == 0) return 0;
         else return vehicleGroupMap.floorEntry(vehicleIndex).getValue();
     }
 
+    /**
+     *
+     * @param requestIndex
+     * @param requestVehicleIndices
+     * @param vehicleGroupMap
+     * @return the number of the dispatcher the request is served by
+     */
     public static int getGroup(int requestIndex, NavigableMap<Integer, Integer> requestVehicleIndices, //
                                NavigableMap<Integer, Integer> vehicleGroupMap) {
         if (!requestVehicleIndices.containsKey(requestIndex))
@@ -69,6 +101,13 @@ public abstract class AnalysisUtils {
         return getGroup(vehicleIndex, vehicleGroupMap);
     }
 
+    /**
+     *
+     * @param storageSupplier
+     * @param vehicleGroupMap
+     * @return NavigableMap containing the request indices and the vehicle's index it was served by
+     * @throws Exception
+     */
     public static NavigableMap<Integer, Integer> createRequestVehicleIndices( //
             StorageSupplier storageSupplier, NavigableMap<Integer, Integer> vehicleGroupMap) throws Exception {
         NavigableMap<Integer, Integer> requestVehicleIndices = new TreeMap<>();
@@ -95,6 +134,10 @@ public abstract class AnalysisUtils {
         return requestVehicleIndices;
     }
 
+    /**
+     *
+     * @return NavigableMap containing the index of the first vehicle in the fleet and the respective fleet number
+     */
     public static NavigableMap<Integer, Integer> createVehicleGroupMap() {
         NavigableMap<Integer, Integer> vehicleGroupMap = new TreeMap<>();
         int firstGroupIndex = 0;
@@ -105,11 +148,26 @@ public abstract class AnalysisUtils {
         return  vehicleGroupMap;
     }
 
+    /**
+     *
+     * @param vehicleIndex
+     * @param from
+     * @param to
+     * @return check if vehicle index is in group [from, to)
+     */
     public static boolean isInGroup(int vehicleIndex, int from , int to) {
         if (vehicleIndex >= from && vehicleIndex < to) return true;
         else return false;
     }
 
+    /**
+     *
+     * @param requestIndex
+     * @param from
+     * @param to
+     * @param requestVehicleIndices
+     * @return check if the request was served by a vehicle contained in group [from, to)
+     */
     public static boolean isInGroup(int requestIndex, int from , int to, NavigableMap<Integer, Integer> requestVehicleIndices) {
         if (!requestVehicleIndices.containsKey(requestIndex)) {
             if (fails < maxFails) {

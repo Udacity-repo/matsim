@@ -29,7 +29,8 @@ import playground.joel.helpers.AnalysisUtils;
 public class AnalyzeAll {
     public final static File GROUPSIZEFILE = new File("output/groupSize.mdisp.txt");
     public static final File TRIPCOUNTERFILE = new File("output/tripCounter.txt");
-    public static final boolean filter = false;
+    public static final boolean filter = true;
+    // filter size can be adapted in the diagram creator
 
 
     public static void main(String[] args) throws Exception {
