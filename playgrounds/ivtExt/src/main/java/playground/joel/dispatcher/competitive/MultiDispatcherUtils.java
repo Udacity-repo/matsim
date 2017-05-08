@@ -30,14 +30,14 @@ public abstract class MultiDispatcherUtils {
             boolean knownDispatcher = false;
             AVDispatcher current = dispatcher.next();
             if (current instanceof HungarianDispatcher) {
-                ((HungarianDispatcher) current).redispatchStep(round_now, multi.supplier(dispatcherNum));
+                ((HungarianDispatcher) current).redispatchStep(round_now, multi, multi.supplier(dispatcherNum));
                 knownDispatcher = true;
             }
+            /* TODO: adapt other dispatchers
             if (current instanceof EdgyDispatcher) {
                 ((EdgyDispatcher) current).redispatchStep(now);
                 knownDispatcher = true;
             }
-            /* TODO: adapt other dispatchers
             if(current instanceof LPFeedbackLIPDispatcher) {
                 ((LPFeedbackLIPDispatcher) current).redispatchStep();
                 knownDispatcher = true;
@@ -46,11 +46,11 @@ public abstract class MultiDispatcherUtils {
                 ((LPFeedforwardDispatcher) current).redispatchStep(round_now);
                 knownDispatcher = true;
             }
-            */
             if (current instanceof NewSingleHeuristicDispatcher) {
                 ((NewSingleHeuristicDispatcher) current).redispatchStep();
                 knownDispatcher = true;
             }
+            */
             GlobalAssert.that(knownDispatcher);
             dispatcherNum++;
         }

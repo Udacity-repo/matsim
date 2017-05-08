@@ -43,9 +43,9 @@ public class DiagramCreator {
     }
 
     public static void createDiagram(File directory, String fileTitle, String diagramTitle, //
-                                     Tensor time, Tensor values, Double maxRange, boolean filter) throws Exception {
+                                     Tensor time, Tensor valuesIn, Double maxRange, boolean filter) throws Exception {
         final TimeSeriesCollection dataset = new TimeSeriesCollection();
-        values = filter(values, time, filterSize, filter);
+        Tensor values = filter(valuesIn, time, filterSize, filter);
         for (int i = 0; i < values.length(); i++) {
             final TimeSeries series = new TimeSeries("time series " + i);
             for (int j = 0; j < time.length(); j++) {
