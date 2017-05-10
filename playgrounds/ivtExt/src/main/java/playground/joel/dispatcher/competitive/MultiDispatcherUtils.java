@@ -41,7 +41,9 @@ public abstract class MultiDispatcherUtils {
             if(current instanceof LPFeedbackLIPDispatcher) {
                 ((LPFeedbackLIPDispatcher) current).rebalanceStep(multi, //
                         multi.getVirtualNodeDivertableNotRebalancingVehicles(dispatcherNum), //
-                        multi.getVirtualNodeRequests());
+                        multi.getVirtualNodeRequests(), //
+                        multi.getVirtualNodeRebalancingToVehicles(dispatcherNum), //
+                        multi.getVirtualNodeArrivingWCustomerVehicles(dispatcherNum));
                 knownDispatcher = true;
             }
             /* TODO: adapt other dispatchers

@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
+import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.router.util.TravelTime;
@@ -14,41 +15,22 @@ import org.matsim.core.router.util.TravelTime;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
-import ch.ethz.idsc.tensor.RealScalar;
-import ch.ethz.idsc.tensor.Tensor;
-import ch.ethz.idsc.tensor.alg.Array;
-import ch.ethz.idsc.tensor.io.Get;
-import ch.ethz.idsc.tensor.io.Put;
-import playground.clruch.dispatcher.core.PartitionedDispatcher;
-import playground.clruch.dispatcher.core.UniversalDispatcher;
-import playground.clruch.dispatcher.core.VehicleLinkPair;
 import playground.clruch.dispatcher.utils.*;
-import playground.clruch.net.VehicleIntegerDatabase;
 import playground.clruch.netdata.VirtualNetwork;
 import playground.clruch.netdata.VirtualNetworkIO;
-import playground.clruch.netdata.VirtualNode;
 import playground.clruch.utils.GlobalAssert;
 import playground.clruch.utils.SafeConfig;
 import playground.sebhoerl.avtaxi.config.AVDispatcherConfig;
 import playground.sebhoerl.avtaxi.config.AVGeneratorConfig;
-import playground.sebhoerl.avtaxi.data.AVVehicle;
 import playground.sebhoerl.avtaxi.dispatcher.AVDispatcher;
 import playground.sebhoerl.avtaxi.framework.AVModule;
-import playground.sebhoerl.avtaxi.passenger.AVRequest;
 import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 
-public class MultiDispatcher extends PartitionedDispatcher {
-    public static final File GROUPSIZEFILE =new File("output/groupSize.mdisp.txt"); 
+public class MultiDispatcher extends AbstractMultiDispatcher {
 
     private final int dispatchPeriod;
     private final int rebalancingPeriod;
-    private final int numberOfDispatchers;
-    private final Tensor fleetSize;
-    private final NavigableMap<Integer, Integer> groupBoundaries = new TreeMap<>();
-    private final int maxMatchNumber; // implementation may not use this
     private HashSet<AVDispatcher> dispatchers = new HashSet<>();
-
-    VehicleIntegerDatabase vehicleIntegerDatabase = new VehicleIntegerDatabase();
 
     private MultiDispatcher( //
                              AVDispatcherConfig avDispatcherConfig, //
@@ -58,102 +40,19 @@ public class MultiDispatcher extends PartitionedDispatcher {
                              Network network, AbstractRequestSelector abstractRequestSelector, //
                              VirtualNetwork virtualNetwork, //
                              HashSet<AVDispatcher> dispatchersIn) {
-        super(avDispatcherConfig, travelTime, parallelLeastCostPathCalculator, eventsManager, virtualNetwork);
-        dispatchers = dispatchersIn;
-        SafeConfig safeConfig = SafeConfig.wrap(avDispatcherConfig);
-        dispatchPeriod = safeConfig.getInteger("dispatchPeriod", 10);
-        rebalancingPeriod = safeConfig.getInteger("rebalancingPeriod", Integer.MAX_VALUE);
-        numberOfDispatchers = safeConfig.getInteger("numberOfDispatchers", 0);
-        fleetSize = Array.zeros(numberOfDispatchers);
-        int sum = 0;
-        for (int dispatcher = 0; dispatcher < numberOfDispatchers; ++dispatcher) {
-            groupBoundaries.put(sum, dispatcher);
-            int size = safeConfig.getInteger("fleetSize" + dispatcher, -1);
-            GlobalAssert.that(size != -1);
-            sum += size;
-            fleetSize.set(RealScalar.of(size), dispatcher);
-        }
-        maxMatchNumber = safeConfig.getInteger("maxMatchNumber", Integer.MAX_VALUE);
-        // TODO check that sum == Total of groupSize == number of vehicles (at this point vehicle count is not available)
-
-        try {
-            Put.of(GROUPSIZEFILE, fleetSize);
-            Tensor check = Get.of(GROUPSIZEFILE);
-            GlobalAssert.that(fleetSize.equals(check));
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            GlobalAssert.that(false);
-        }
+        super(avDispatcherConfig, travelTime, parallelLeastCostPathCalculator, eventsManager, network, //
+                abstractRequestSelector, virtualNetwork, dispatchersIn);
+        dispatchPeriod = super.dispatchPeriod;
+        rebalancingPeriod = super.rebalancingPeriod;
+        dispatchers = super.dispatchers;
     }
-
-    public int getVehicleIndex(AVVehicle avVehicle) {
-        return vehicleIntegerDatabase.getId(avVehicle); // map must contain vehicle
-    }
-
-    public Supplier<Collection<VehicleLinkPair>> supplier(int dispatcher) {
-        Supplier<Collection<VehicleLinkPair>> supplier = () -> getDivertableVehicles().stream() //
-                .filter(vlp -> groupBoundaries.lowerEntry(getVehicleIndex(vlp.avVehicle) + 1).getValue() == dispatcher) //
-                .collect(Collectors.toList());
-        return supplier;
-    }
-
-    public Supplier<Collection<VehicleLinkPair>> virtualNotRebalancingSupplier(int dispatcher) {
-        Supplier<Collection<VehicleLinkPair>> supplier = () -> getVirtualNodeDivertableNotRebalancingVehicles() //
-                .values().stream().flatMap(v -> v.stream().filter(vlp -> groupBoundaries.lowerEntry( //
-                        getVehicleIndex(vlp.avVehicle) + 1).getValue() == dispatcher)).collect(Collectors.toList());
-        return supplier;
-    }
-
-    public Map<VirtualNode, List<VehicleLinkPair>> getVirtualNodeDivertableNotRebalancingVehicles(int dispatcher) {
-        Map<VirtualNode, List<VehicleLinkPair>> availableVehicles = getVirtualNodeDivertableNotRebalancingVehicles();
-        Map<VirtualNode, List<VehicleLinkPair>> returnMap = new HashMap<>();
-        for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes()) {
-            if (!returnMap.containsKey(virtualNode)) {
-                returnMap.put(virtualNode, Collections.emptyList());
-            }
-        }
-        Iterator<VirtualNode> vNode = getVirtualNodeDivertableNotRebalancingVehicles().keySet().iterator();
-        while(vNode.hasNext()) {
-            List<VehicleLinkPair> list = availableVehicles.get(vNode.next()).stream(). //
-                    filter(vlp -> groupBoundaries.lowerEntry(getVehicleIndex(vlp.avVehicle) + 1). //
-                    getValue() == dispatcher).collect(Collectors.toList());
-            returnMap.put(vNode.next(), list);
-        }
-        GlobalAssert.that(!returnMap.isEmpty());
-        return returnMap;
-    }
-
-    public Map<VirtualNode, List<AVRequest>> getVirtualNodeRequests() {
-        return super.getVirtualNodeRequests();
-    }
-
-
 
     @Override
-    public void redispatch(double now) {
-
-        for (AVVehicle avVehicle : getMaintainedVehicles())
-            vehicleIntegerDatabase.getId(avVehicle);
-
-        final long round_now = Math.round(now);
-
-        // TODO stop vehicle from driving there
-        new InOrderOfArrivalMatcher(this::setAcceptRequest) //
-                .match(getStayVehicles(), getAVRequestsAtLinks()); // TODO prelimiary correct
-
-        if (round_now % rebalancingPeriod == 0) {
-            rebalanceStep(now, round_now);
-        }
-
-        if (round_now % dispatchPeriod == 0) {
-            redispatchStep(now, round_now);
-        }
-    }
-
     public void rebalanceStep(double now, long round_now) {
         MultiDispatcherUtils.rebalanceStep(this, now, round_now, dispatchers);
     }
 
+    @Override
     public void redispatchStep(double now, long round_now) {
         MultiDispatcherUtils.redispatchStep(this, now, round_now, dispatchers);
     }

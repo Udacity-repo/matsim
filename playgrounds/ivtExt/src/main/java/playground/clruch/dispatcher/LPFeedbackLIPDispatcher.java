@@ -96,7 +96,8 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
         final long round_now = Math.round(now);
 
         if (round_now % rebalancingPeriod == 0) {
-            rebalanceStep(this, getVirtualNodeDivertableNotRebalancingVehicles(), getVirtualNodeRequests());
+            rebalanceStep(this, getVirtualNodeDivertableNotRebalancingVehicles(), getVirtualNodeRequests(), //
+                    getVirtualNodeRebalancingToVehicles(), getVirtualNodeArrivingWCustomerVehicles());
         }
 
         // Part II: outside rebalancing periods, permanently assign desitnations to vehicles using
@@ -109,7 +110,9 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
 
     public void rebalanceStep(RebalancingDispatcher dispatcher, //
                               Map<VirtualNode, List<VehicleLinkPair>> availableVehicles, //
-                              Map<VirtualNode, List<AVRequest>> requests) {
+                              Map<VirtualNode, List<AVRequest>> requests, //
+                              Map<VirtualNode, Set<AVVehicle>> v_ij_reb, //
+                              Map<VirtualNode, Set<AVVehicle>> v_ij_cust) {
 
         // II.i compute rebalancing vehicles and send to virtualNodes
         {
@@ -126,8 +129,6 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
 
             // calculate excess vehicles per virtual Node i, where v_i excess = vi_own - c_i =
             // v_i + sum_j (v_ji) - c_i
-            Map<VirtualNode, Set<AVVehicle>> v_ij_reb = getVirtualNodeRebalancingToVehicles();
-            Map<VirtualNode, Set<AVVehicle>> v_ij_cust = getVirtualNodeArrivingWCustomerVehicles();
             Tensor vi_excessT = Array.zeros(virtualNetwork.getvNodesCount());
             for (VirtualNode virtualNode : availableVehicles.keySet()) {
                 int viExcessVal = availableVehicles.get(virtualNode).size() + v_ij_reb.get(virtualNode).size()
