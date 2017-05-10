@@ -169,7 +169,7 @@ public abstract class AbstractUniversalDispatcher extends VehicleMaintainer {
      *            is provided from super.getDivertableVehicles()
      * @param destination
      */
-    protected final void setVehicleDiversion(final VehicleLinkPair vehicleLinkPair, final Link destination) {
+    public final void setVehicleDiversion(final VehicleLinkPair vehicleLinkPair, final Link destination) {
         final Schedule schedule = vehicleLinkPair.avVehicle.getSchedule();
         Task task = schedule.getCurrentTask(); // <- implies that task is started
         new AVTaskAdapter(task) {

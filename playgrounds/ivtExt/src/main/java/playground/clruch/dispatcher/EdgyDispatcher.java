@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.matsim.api.core.v01.Coord;
@@ -76,20 +78,28 @@ public class EdgyDispatcher extends UniversalDispatcher {
 
         final long round_now = Math.round(now);
         if (round_now % dispatchPeriod == 0) {
-            redispatchStep(now);
+            redispatchStep(now, this, () -> getDivertableVehicles());
 
         }
 
     }
 
-    public void redispatchStep(double now) {
+    public void redispatchStep(double now, UniversalDispatcher dispatcher, Supplier<Collection<VehicleLinkPair>> supplier) {
 
+        /* old version for edgy dispatcher only
         total_abortTrip += new DrivebyRequestStopper(this::setVehicleDiversion).realize(getAVRequestsAtLinks(),
                 getDivertableVehicles());
+                */
+
+        // TODO: replace this by dispatcher and dispatcher.setVehicleDiversion (setVehicleDiversion in AbstractUniversalDispatcher needs to be public)
+        total_abortTrip += new DrivebyRequestStopper((vlp, link) -> dispatcher.setVehicleDiversion(vlp, link)). //
+                realize(dispatcher.getAVRequestsAtLinks(), supplier.get());
 
         { // TODO this should be replaceable by some naive matcher
-            Iterator<AVRequest> requestIterator = getAVRequests().iterator();
-            for (VehicleLinkPair vehicleLinkPair : getDivertableVehicles()) {
+            // old version:     Iterator<AVRequest> requestIterator = getAVRequests().iterator();
+            Iterator<AVRequest> requestIterator = dispatcher.getAVRequestsAtLinks().values().stream(). //
+                    flatMap(List::stream).collect(Collectors.toList()).iterator();
+            for (VehicleLinkPair vehicleLinkPair : supplier.get()) {
                 Link dest = vehicleLinkPair.getCurrentDriveDestination();
                 if (dest == null) { // vehicle in stay task
                     if (requestIterator.hasNext()) {
@@ -99,7 +109,7 @@ public class EdgyDispatcher extends UniversalDispatcher {
                         // 3000 || nextRequest.getSubmissionTime()-now > 20*60){
                         if (coordDistance(link.getCoord(), vehicleLinkPair.getDivertableLocation().getCoord()) < 3000
                                 || now - nextRequest.getSubmissionTime() > 10 * 60) {
-                            setVehicleDiversion(vehicleLinkPair, link);
+                            dispatcher.setVehicleDiversion(vehicleLinkPair, link);
                             ++total_driveOrder;
                         }
                     } else

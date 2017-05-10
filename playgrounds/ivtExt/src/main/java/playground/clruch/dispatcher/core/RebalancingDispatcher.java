@@ -39,11 +39,15 @@ public abstract class RebalancingDispatcher extends UniversalDispatcher {
     }
 
     // This function has to be called only after getVirtualNodeRebalancingVehicles
-    protected synchronized final void setVehicleRebalance(final VehicleLinkPair vehicleLinkPair, final Link destination) {
+    protected synchronized final void setVehicleRebalance(RebalancingDispatcher dispatcher, final VehicleLinkPair vehicleLinkPair, final Link destination) {
         // redivert the vehicle, then generate a rebalancing event and add to list of currently rebalancing vehicles
-        setVehicleDiversion(vehicleLinkPair, destination);
-        eventsManager.processEvent(RebalanceVehicleEvent.create(getTimeNow(), vehicleLinkPair.avVehicle, destination));
-        Link returnVal = rebalancingVehicles.put(vehicleLinkPair.avVehicle, destination);
+        dispatcher.setVehicleDiversion(vehicleLinkPair, destination);
+        dispatcher.eventsManager.processEvent(RebalanceVehicleEvent.create(dispatcher.getTimeNow(), vehicleLinkPair.avVehicle, destination));
+        Link returnVal = dispatcher.rebalancingVehicles.put(vehicleLinkPair.avVehicle, destination);
         GlobalAssert.that(nonStrict || returnVal == null);
+    }
+
+    protected synchronized final void setVehicleRebalance(final VehicleLinkPair vehicleLinkPair, final Link destination) {
+        setVehicleRebalance(this, vehicleLinkPair, destination);
     }
 }

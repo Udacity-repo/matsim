@@ -156,7 +156,10 @@ public class AnalyzeAll {
                         requestVehicleIndices, vehicleGroupMap);
                 lowerBound += AnalysisUtils.getGroupSize(i);
             }
-            // TODO: handle possible remaining vehicles
+            // check that all vehicles have been looked at
+            if (lowerBound != AnalysisUtils.getNumVehicles(storageSupplier))
+                System.out.println("ATTENTION: Not all vehicles have been handled!");
+            GlobalAssert.that(lowerBound == AnalysisUtils.getNumVehicles(storageSupplier));
         }
     }
 }

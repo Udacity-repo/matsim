@@ -5,8 +5,11 @@ import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.router.util.TravelTime;
 import playground.clruch.dispatcher.EdgyDispatcher;
 import playground.clruch.dispatcher.HungarianDispatcher;
+import playground.clruch.dispatcher.LPFeedbackLIPDispatcher;
+import playground.clruch.dispatcher.LPFeedforwardDispatcher;
 import playground.clruch.dispatcher.core.UniversalDispatcher;
-import playground.clruch.dispatcher.utils.AbstractRequestSelector;
+import playground.clruch.dispatcher.utils.*;
+import playground.clruch.netdata.VirtualNetwork;
 import playground.clruch.utils.GlobalAssert;
 import playground.joel.dispatcher.single_heuristic.NewSingleHeuristicDispatcher;
 import playground.sebhoerl.avtaxi.config.AVDispatcherConfig;
@@ -22,6 +25,40 @@ import java.util.Iterator;
  */
 public abstract class MultiDispatcherUtils {
 
+    public static void rebalanceStep(MultiDispatcher multi, double now, long round_now, HashSet<AVDispatcher> dispatchers) {
+        Iterator<AVDispatcher> dispatcher = dispatchers.iterator();
+        Integer dispatcherNum = 0;
+        while(dispatcher.hasNext())
+        {
+            boolean knownDispatcher = false;
+            AVDispatcher current = dispatcher.next();
+            if (current instanceof HungarianDispatcher) {
+                knownDispatcher = true;
+            }
+            if (current instanceof EdgyDispatcher) {
+                knownDispatcher = true;
+            }
+            if(current instanceof LPFeedbackLIPDispatcher) {
+                ((LPFeedbackLIPDispatcher) current).rebalanceStep(multi, //
+                        multi.getVirtualNodeDivertableNotRebalancingVehicles(dispatcherNum), //
+                        multi.getVirtualNodeRequests());
+                knownDispatcher = true;
+            }
+            /* TODO: adapt other dispatchers
+            if(current instanceof LPFeedforwardDispatcher) {
+                ((LPFeedforwardDispatcher) current).rebalanceStep(round_now);
+                knownDispatcher = true;
+            }
+            if (current instanceof NewSingleHeuristicDispatcher) {
+                ((NewSingleHeuristicDispatcher) current).rebalanceStep();
+                knownDispatcher = true;
+            }
+            */
+            GlobalAssert.that(knownDispatcher);
+            dispatcherNum++;
+        }
+    }
+
     public static void redispatchStep(MultiDispatcher multi, double now, long round_now, HashSet<AVDispatcher> dispatchers) {
         Iterator<AVDispatcher> dispatcher = dispatchers.iterator();
         Integer dispatcherNum = 0;
@@ -33,15 +70,16 @@ public abstract class MultiDispatcherUtils {
                 ((HungarianDispatcher) current).redispatchStep(round_now, multi, multi.supplier(dispatcherNum));
                 knownDispatcher = true;
             }
-            /* TODO: adapt other dispatchers
             if (current instanceof EdgyDispatcher) {
-                ((EdgyDispatcher) current).redispatchStep(now);
+                ((EdgyDispatcher) current).redispatchStep(now, multi, multi.supplier(dispatcherNum));
                 knownDispatcher = true;
             }
             if(current instanceof LPFeedbackLIPDispatcher) {
-                ((LPFeedbackLIPDispatcher) current).redispatchStep();
+                ((LPFeedbackLIPDispatcher) current).redispatchStep(round_now, multi, //
+                        multi.virtualNotRebalancingSupplier(dispatcherNum));
                 knownDispatcher = true;
             }
+            /* TODO: adapt other dispatchers
             if(current instanceof LPFeedforwardDispatcher) {
                 ((LPFeedforwardDispatcher) current).redispatchStep(round_now);
                 knownDispatcher = true;
@@ -90,12 +128,15 @@ public abstract class MultiDispatcherUtils {
     }
 
     public static AVDispatcher newDispatcher (String dispatcherName, //
-                                AVDispatcherConfig avDispatcherConfig, //
-                                AVGeneratorConfig generatorConfig, //
-                                TravelTime travelTime, //
-                                ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
-                                EventsManager eventsManager, //
-                                Network network, AbstractRequestSelector abstractRequestSelector) {
+                                              AVDispatcherConfig avDispatcherConfig, //
+                                              AVGeneratorConfig generatorConfig, //
+                                              TravelTime travelTime, //
+                                              ParallelLeastCostPathCalculator parallelLeastCostPathCalculator, //
+                                              EventsManager eventsManager, //
+                                              Network network, AbstractRequestSelector abstractRequestSelector, //
+                                              AbstractVirtualNodeDest abstractVirtualNodeDest, //
+                                              AbstractVehicleDestMatcher abstractVehicleDestMatcher, //
+                                              VirtualNetwork virtualNetwork) {
         AVDispatcher dispatcher;
         switch (dispatcherName) {
             case "HungarianDispatcher": dispatcher = new HungarianDispatcher(avDispatcherConfig, travelTime, //
@@ -104,11 +145,11 @@ public abstract class MultiDispatcherUtils {
             case "EdgyDispatcher": dispatcher = new EdgyDispatcher(avDispatcherConfig, travelTime, //
                     parallelLeastCostPathCalculator, eventsManager, network);
                 break;
-            /* TODO: adapt other dispatchers
             case "LPFeedbackLIPDispatcher": dispatcher = new LPFeedbackLIPDispatcher(avDispatcherConfig, generatorConfig, //
                     travelTime, parallelLeastCostPathCalculator, eventsManager, virtualNetwork, //
                     abstractVirtualNodeDest, abstractVehicleDestMatcher);
                 break;
+            /* TODO: adapt other dispatchers
             case "LPFeedforwardDispatcher": dispatcher = new LPFeedforwardDispatcher(avDispatcherConfig, generatorConfig, //
                     travelTime, parallelLeastCostPathCalculator, eventsManager, virtualNetwork, abstractVirtualNodeDest, //
                     abstractRequestSelector, abstractVehicleDestMatcher, arrivalInformationIn);
