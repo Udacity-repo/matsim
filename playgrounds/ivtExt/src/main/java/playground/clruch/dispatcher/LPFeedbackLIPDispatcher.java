@@ -103,7 +103,6 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
 
         // Part II: outside rebalancing periods, permanently assign destinations to vehicles using bipartite matching
         if (round_now % redispatchPeriod == 0) {
-
             redispatchStep(round_now, this,
                     () -> getVirtualNodeDivertableNotRebalancingVehicles().values().stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
         }
@@ -118,16 +117,14 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
 
         // II.i compute rebalancing vehicles and send to virtualNodes
         {
-            // Debug:
-            System.out.println("printing the sizes of the availableVehicles:");
-            availableVehicles.values().stream().forEach(v -> System.out.print("  " + v.size()));
-            System.out.println();
-
+            int totalAvailable = 10;
+            
+            
             // calculate desired vehicles per vNode
             int num_requests = requests.values().stream().mapToInt(List::size).sum();
-            int vi_desired_num = (int) ((numberOfAVs - num_requests) / (double) virtualNetwork.getvNodesCount());
-            GlobalAssert.that(vi_desired_num * virtualNetwork.getvNodesCount() <= numberOfAVs);
-            Tensor vi_desiredT = Tensors.vector(i -> RationalScalar.of(vi_desired_num, 1), virtualNetwork.getvNodesCount());
+            double vi_desired_num = ((numberOfAVs - num_requests) / (double) virtualNetwork.getvNodesCount());
+            int vi_desired_numint = (int) Math.floor(vi_desired_num);
+            Tensor vi_desiredT = Tensors.vector(i -> RationalScalar.of(vi_desired_numint, 1), virtualNetwork.getvNodesCount());
 
             // calculate excess vehicles per virtual Node i, where v_i excess = vi_own - c_i =
             // v_i + sum_j (v_ji) - c_i
@@ -139,9 +136,14 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
             }
 
             // solve the linear program with updated right-hand side
-            // fill right-hand-side
+            // fill right-hand-side // TODO if MATSim would never produce zero available vehicles, we could save these lines
             Tensor rhs = vi_desiredT.subtract(vi_excessT);
-            Tensor rebalanceCount2 = lpVehicleRebalancing.solveUpdatedLP(rhs,GLPKConstants.GLP_LO);
+            Tensor rebalanceCount2 = Tensors.empty();
+            if (totalAvailable > 0) {
+                rebalanceCount2 = lpVehicleRebalancing.solveUpdatedLP(rhs, GLPKConstants.GLP_LO);
+            } else {
+                rebalanceCount2 = Array.zeros(virtualNetwork.getvNodesCount(), virtualNetwork.getvNodesCount());
+            }
             Tensor rebalanceCount = Round.of(rebalanceCount2);
             // TODO this should never become active, can be possibly removed later
             // assert that solution is integer and does not contain negative values
