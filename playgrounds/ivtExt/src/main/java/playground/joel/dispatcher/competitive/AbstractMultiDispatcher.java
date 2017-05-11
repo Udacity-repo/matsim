@@ -110,6 +110,8 @@ public abstract class AbstractMultiDispatcher extends PartitionedDispatcher {
                 returnMap.put(virtualNode, Collections.emptyList());
             }
         }
+        System.out.println("Virtual Nodes in returnMap: " + returnMap.size());
+        
         Iterator<VirtualNode> vNode = getVirtualNodeDivertableNotRebalancingVehicles().keySet().iterator();
         while(vNode.hasNext()) {
             List<VehicleLinkPair> list = availableVehicles.get(vNode.next()).stream(). //
