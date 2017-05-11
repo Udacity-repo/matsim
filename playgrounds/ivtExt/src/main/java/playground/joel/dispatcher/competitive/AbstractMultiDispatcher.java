@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 /**
  * Created by Joel on 10.05.2017.
  */
-public class AbstractMultiDispatcher extends PartitionedDispatcher {
+public abstract class AbstractMultiDispatcher extends PartitionedDispatcher {
     public static final File GROUPSIZEFILE =new File("output/groupSize.mdisp.txt");
 
     final int dispatchPeriod;
@@ -43,6 +43,7 @@ public class AbstractMultiDispatcher extends PartitionedDispatcher {
     final NavigableMap<Integer, Integer> groupBoundaries = new TreeMap<>();
     final int maxMatchNumber; // implementation may not use this
     HashSet<AVDispatcher> dispatchers = new HashSet<>();
+    HashMap<Integer, LPVehicleRebalancing> lpVehicleRebalancings = new HashMap<>();
     VehicleIntegerDatabase vehicleIntegerDatabase = new VehicleIntegerDatabase();
 
     public AbstractMultiDispatcher( //
@@ -68,6 +69,7 @@ public class AbstractMultiDispatcher extends PartitionedDispatcher {
             GlobalAssert.that(size != -1);
             sum += size;
             fleetSize.set(RealScalar.of(size), dispatcher);
+            lpVehicleRebalancings.put(dispatcher, new LPVehicleRebalancing(virtualNetwork));
         }
         maxMatchNumber = safeConfig.getInteger("maxMatchNumber", Integer.MAX_VALUE);
         // TODO check that sum == Total of groupSize == number of vehicles (at this point vehicle count is not available)

@@ -43,7 +43,8 @@ public abstract class MultiDispatcherUtils {
                         multi.getVirtualNodeDivertableNotRebalancingVehicles(dispatcherNum), //
                         multi.getVirtualNodeRequests(), //
                         multi.getVirtualNodeRebalancingToVehicles(dispatcherNum), //
-                        multi.getVirtualNodeArrivingWCustomerVehicles(dispatcherNum));
+                        multi.getVirtualNodeArrivingWCustomerVehicles(dispatcherNum), //
+                        multi.lpVehicleRebalancings.get(dispatcherNum));
                 knownDispatcher = true;
             }
             /* TODO: adapt other dispatchers

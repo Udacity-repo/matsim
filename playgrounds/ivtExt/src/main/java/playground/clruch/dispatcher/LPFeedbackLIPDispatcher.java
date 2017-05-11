@@ -97,7 +97,7 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
 
         if (round_now % rebalancingPeriod == 0) {
             rebalanceStep(this, getVirtualNodeDivertableNotRebalancingVehicles(), getVirtualNodeRequests(), //
-                    getVirtualNodeRebalancingToVehicles(), getVirtualNodeArrivingWCustomerVehicles());
+                    getVirtualNodeRebalancingToVehicles(), getVirtualNodeArrivingWCustomerVehicles(), lpVehicleRebalancing);
         }
 
         // Part II: outside rebalancing periods, permanently assign desitnations to vehicles using
@@ -112,7 +112,8 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
                               Map<VirtualNode, List<VehicleLinkPair>> availableVehicles, //
                               Map<VirtualNode, List<AVRequest>> requests, //
                               Map<VirtualNode, Set<AVVehicle>> v_ij_reb, //
-                              Map<VirtualNode, Set<AVVehicle>> v_ij_cust) {
+                              Map<VirtualNode, Set<AVVehicle>> v_ij_cust, //
+                              LPVehicleRebalancing lpRebalancing) {
 
         // II.i compute rebalancing vehicles and send to virtualNodes
         {
@@ -139,7 +140,7 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
             // solve the linear program with updated right-hand side
             // fill right-hand-side
             Tensor rhs = vi_desiredT.subtract(vi_excessT);
-            Tensor rebalanceCount2 = lpVehicleRebalancing.solveUpdatedLP(rhs);
+            Tensor rebalanceCount2 = lpRebalancing.solveUpdatedLP(rhs);
             Tensor rebalanceCount = Round.of(rebalanceCount2);
             // TODO this should never become active, can be possibly removed later
             // assert that solution is integer and does not contain negative values

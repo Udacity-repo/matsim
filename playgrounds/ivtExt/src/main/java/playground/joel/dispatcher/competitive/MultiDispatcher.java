@@ -31,6 +31,7 @@ public class MultiDispatcher extends AbstractMultiDispatcher {
     private final int dispatchPeriod;
     private final int rebalancingPeriod;
     private HashSet<AVDispatcher> dispatchers = new HashSet<>();
+    HashMap<Integer, LPVehicleRebalancing> lpVehicleRebalancings = new HashMap<>();
 
     private MultiDispatcher( //
                              AVDispatcherConfig avDispatcherConfig, //
@@ -45,6 +46,7 @@ public class MultiDispatcher extends AbstractMultiDispatcher {
         dispatchPeriod = super.dispatchPeriod;
         rebalancingPeriod = super.rebalancingPeriod;
         dispatchers = super.dispatchers;
+        lpVehicleRebalancings = super.lpVehicleRebalancings;
     }
 
     @Override
