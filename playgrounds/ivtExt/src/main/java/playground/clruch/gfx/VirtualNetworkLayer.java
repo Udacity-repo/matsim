@@ -30,9 +30,9 @@ public class VirtualNetworkLayer extends ViewerLayer {
     private PointCloud pointCloud = null;
     private VirtualNetwork virtualNetwork = null;
     private boolean drawVNodes = true;
-    private boolean drawVLinks = true;
+    private boolean drawVLinks = false;
     VirtualNodeGeometry virtualNodeGeometry = null;
-    private VirtualNodeShader virtualNodeShader = VirtualNodeShader.VehicleCount;
+    private VirtualNodeShader virtualNodeShader = VirtualNodeShader.None;
 
     // TODO make this functionality part of tensor library
     public static Tensor normalize1Norm(Tensor count) {
@@ -92,12 +92,22 @@ public class VirtualNetworkLayer extends ViewerLayer {
                 }
                 break;
             }
+            case MeanRequestDistance: {
+                Tensor count = new MeanRequestDistanceVirtualNodeFunction(matsimMapComponent.db, virtualNetwork).evaluate(ref);
+                Tensor prob = normalize1Norm(count);
+                for (Entry<VirtualNode, Shape> entry : virtualNodeGeometry.getShapes(matsimMapComponent).entrySet()) {
+                    graphics.setColor(new Color(128, 128, 128, prob.Get(entry.getKey().index).number().intValue()));
+                    graphics.fill(entry.getValue());
+                }
+                break;
+            }
             default:
                 break;
             }
         }
         if (drawVLinks && virtualNetwork != null) {
             final MatsimStaticDatabase db = matsimMapComponent.db;
+            
             graphics.setColor(new Color(255, 0, 0, 64));
             for (VirtualLink vl : virtualNetwork.getVirtualLinks()) {
                 VirtualNode n1 = vl.getFrom();

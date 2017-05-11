@@ -29,6 +29,7 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 
 import playground.clruch.dispatcher.*;
+import playground.fseccamo.dispatcher.MPCDispatcherPreparer;
 import playground.fseccamo.dispatcher.MPCDispatcher_1;
 import playground.joel.dispatcher.competitive.MultiDispatcher;
 import playground.joel.dispatcher.competitive.MultiHungarianDispatcher;
@@ -141,6 +142,8 @@ public class AVModule extends AbstractModule {
         // MPC dispatcher
         bind(MPCDispatcher_1.Factory.class);
         AVUtils.bindDispatcherFactory(binder(), MPCDispatcher_1.class.getSimpleName()).to(MPCDispatcher_1.Factory.class);
+        bind(MPCDispatcherPreparer.Factory.class);
+        AVUtils.bindDispatcherFactory(binder(), MPCDispatcherPreparer.class.getSimpleName()).to(MPCDispatcherPreparer.Factory.class);
         
     }
 
