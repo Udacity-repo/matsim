@@ -188,6 +188,7 @@ public class LPVehicleRebalancing {
             GlobalAssert.that(false);
         }
 
+        write_lp_solution(lp);
 
         // fill result vector
         //rebalance from i to j is equal to variable  i*( n-1) + j +1

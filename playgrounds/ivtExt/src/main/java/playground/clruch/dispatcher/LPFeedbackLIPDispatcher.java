@@ -141,7 +141,7 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
             // solve the linear program with updated right-hand side
             // fill right-hand-side
             Tensor rhs = vi_desiredT.subtract(vi_excessT);
-            Tensor rebalanceCount2 = lpRebalancing.solveUpdatedLP(rhs,GLPKConstants.GLP_LO);
+            Tensor rebalanceCount2 = lpVehicleRebalancing.solveUpdatedLP(rhs,GLPKConstants.GLP_LO);
             Tensor rebalanceCount = Round.of(rebalanceCount2);
             // TODO this should never become active, can be possibly removed later
             // assert that solution is integer and does not contain negative values
