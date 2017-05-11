@@ -211,16 +211,16 @@ public class LPVehicleRebalancing {
 
         name = GLPK.glp_get_obj_name(lp);
         val = GLPK.glp_get_obj_val(lp);
-        System.out.print(name);
-        System.out.print(" = ");
-        System.out.println(val);
+        //System.out.print(name);
+        //System.out.print(" = ");
+        //System.out.println(val);
         n = GLPK.glp_get_num_cols(lp);
         for (i = 1; i <= n; i++) {
             name = GLPK.glp_get_col_name(lp, i);
             val = GLPK.glp_get_col_prim(lp, i);
-            System.out.print(name);
-            System.out.print(" = ");
-            System.out.println(val);
+            //System.out.print(name);
+            //System.out.print(" = ");
+            //System.out.println(val);
         }
     }
 

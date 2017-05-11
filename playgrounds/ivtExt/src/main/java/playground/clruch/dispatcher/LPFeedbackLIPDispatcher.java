@@ -117,30 +117,10 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
 
         // II.i compute rebalancing vehicles and send to virtualNodes
         {
-            // DEBUG
-            System.out.println("availableVehicles: ");
-            availableVehicles.values().stream().forEach(v->System.out.println(v.size() + " "));
-            
-            System.out.println("v_ij_reb: ");
-            v_ij_reb.values().stream().forEach(v->System.out.println(v.size()+ " "));
-
-            System.out.println("v_ij_cust: ");
-            v_ij_cust.values().stream().forEach(v->System.out.println(v.size()+ " "));
-
-            System.out.println("requests: ");
-            requests.values().stream().forEach(v->System.out.println(v.size()));
-
-
-            
-            // DEBUG END
-            
-            
-            
             int totalAvailable = 0;
             for(List<VehicleLinkPair> vlpl : availableVehicles.values()){
                 totalAvailable += vlpl.size();                    
             }
-            
             
             // calculate desired vehicles per vNode
             int num_requests = requests.values().stream().mapToInt(List::size).sum();
@@ -161,9 +141,6 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
             // fill right-hand-side // TODO if MATSim would never produce zero available vehicles, we could save these lines
             Tensor rhs = vi_desiredT.subtract(vi_excessT);
             Tensor rebalanceCount2 = Tensors.empty();
-            System.out.println("vi_d = " + vi_desiredT);
-            System.out.println("vi_e = " + vi_excessT);
-            System.out.println("rhs = " + rhs);
             if (totalAvailable > 0) {
                 rebalanceCount2 = lpRebalancing.solveUpdatedLP(rhs, GLPKConstants.GLP_LO);
             } else {
