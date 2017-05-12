@@ -23,6 +23,7 @@ import java.util.TreeMap;
 public abstract class AnalysisUtils {
     private static int fails = 0;
     private static int maxFails = 50;
+    private static int totalVehicles = 0;
 
     /**
      *
@@ -31,8 +32,12 @@ public abstract class AnalysisUtils {
      * @throws Exception
      */
     public static int getNumVehicles(StorageSupplier storageSupplier) throws Exception{
-        SimulationObject init = storageSupplier.getSimulationObject(1);
-        return init.vehicles.size();
+        if (totalVehicles == 0) {
+            // only necessary for first initialization
+            SimulationObject init = storageSupplier.getSimulationObject(1);
+            totalVehicles = init.vehicles.size();
+        }
+        return totalVehicles;
     }
 
     /**
@@ -41,8 +46,9 @@ public abstract class AnalysisUtils {
      */
     public static int getNumGroups() {
         if (getGroupSizes() != Tensors.empty())
-            return getGroupSizes().length();
-        else return 0;
+            if(getGroupSizes().length() > 0) return getGroupSizes().length();
+                    else return  1;
+        else return 1;
     }
 
     /**
@@ -58,6 +64,9 @@ public abstract class AnalysisUtils {
                 exception.printStackTrace();
                 GlobalAssert.that(false);
             }
+        } else {
+            GlobalAssert.that(totalVehicles != 0);
+            sizes = RealScalar.of(totalVehicles);
         }
         return sizes;
     }
@@ -69,9 +78,11 @@ public abstract class AnalysisUtils {
      */
     public static int getGroupSize(int group) {
         Tensor sizes = getGroupSizes();
-        GlobalAssert.that(group < sizes.length());
-        int size = sizes.Get(group).number().intValue();
-        return size;
+        if (sizes.length() > 0) {
+            GlobalAssert.that(group < sizes.length());
+            return sizes.Get(group).number().intValue();
+        } else
+        return totalVehicles;
     }
 
     /**
@@ -81,8 +92,7 @@ public abstract class AnalysisUtils {
      * @return the number of the dispatcher the vehicle belongs to
      */
     public static int getGroup(int vehicleIndex, NavigableMap<Integer, Integer> vehicleGroupMap) {
-        if (vehicleGroupMap.size() == 0) return 0;
-        else return vehicleGroupMap.floorEntry(vehicleIndex).getValue();
+        return vehicleGroupMap.floorEntry(vehicleIndex).getValue();
     }
 
     /**
@@ -111,7 +121,8 @@ public abstract class AnalysisUtils {
     public static NavigableMap<Integer, Integer> createRequestVehicleIndices( //
             StorageSupplier storageSupplier, NavigableMap<Integer, Integer> vehicleGroupMap) throws Exception {
         NavigableMap<Integer, Integer> requestVehicleIndices = new TreeMap<>();
-        Tensor trips = Array.zeros(getNumGroups() > 0 ? getNumGroups() : 1);
+        int numGroups = getNumGroups();
+        Tensor trips = Array.zeros(getNumGroups());
         for (int index = 0; index < storageSupplier.size(); ++index) {
             SimulationObject s = storageSupplier.getSimulationObject(index);
             List<DispatchEvent> list = (List<DispatchEvent>) s.serializable;

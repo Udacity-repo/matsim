@@ -65,8 +65,7 @@ public class AnalyzeAll {
         Tensor summary = Join.of(1, coreAnalysis.summary, distanceAnalysis.summary);
         saveFile(summary, "summary", data);
         AnalyzeAll.plot("summary", "binnedWaitingTimes", "waiting times", 3, 6, 1200.0, data);
-            // maximum waiting time in the plot to have this uniform for all
-                                                                                         // simulations
+            // maximum waiting time in the plot to have this uniform for all simulations
         AnalyzeAll.plot("summary", "binnedTimeRatios", "occupancy ratio", 10, 11, data);
         AnalyzeAll.plot("summary", "binnedDistanceRatios", "distance ratio", 13, 14, data);
         getTotals(summary, coreAnalysis, data);
@@ -141,11 +140,13 @@ public class AnalyzeAll {
         final int size = storageSupplier.size();
         System.out.println("found files: " + size);
 
+        AnalysisUtils.getNumVehicles(storageSupplier); // loads total number of vehicles into AnalysisUtils
         NavigableMap<Integer, Integer> vehicleGroupMap = AnalysisUtils.createVehicleGroupMap();
-        NavigableMap<Integer, Integer> requestVehicleIndices = AnalysisUtils.createRequestVehicleIndices(storageSupplier, vehicleGroupMap);
+        NavigableMap<Integer, Integer> requestVehicleIndices = //
+                AnalysisUtils.createRequestVehicleIndices(storageSupplier, vehicleGroupMap);
 
         analyzeAndPlot(config, storageSupplier, "data", requestVehicleIndices, vehicleGroupMap);
-        if (AnalysisUtils.getNumGroups() != 0) {
+        if (AnalysisUtils.getNumGroups() > 1) {
             int lowerBound = 0;
             for (int i = 0; i < AnalysisUtils.getNumGroups(); i++) {
                 System.out.println("-------------------------------------------------------------------");
