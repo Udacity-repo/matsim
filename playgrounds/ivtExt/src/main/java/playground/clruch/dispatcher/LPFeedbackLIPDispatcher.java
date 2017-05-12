@@ -103,8 +103,9 @@ public class LPFeedbackLIPDispatcher extends PartitionedDispatcher {
 
         // Part II: outside rebalancing periods, permanently assign destinations to vehicles using bipartite matching
         if (round_now % redispatchPeriod == 0) {
-            redispatchStep(round_now, this,
-                    () -> getVirtualNodeDivertableNotRebalancingVehicles().values().stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
+            redispatchStep(round_now, this, //
+                    () -> getVirtualNodeDivertableNotRebalancingVehicles().values(). //
+                            stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
         }
     }
 

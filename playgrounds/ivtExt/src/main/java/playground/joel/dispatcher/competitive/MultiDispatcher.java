@@ -18,6 +18,8 @@ import com.google.inject.name.Named;
 import playground.clruch.dispatcher.utils.*;
 import playground.clruch.netdata.VirtualNetwork;
 import playground.clruch.netdata.VirtualNetworkIO;
+import playground.clruch.traveldata.TravelData;
+import playground.clruch.traveldata.TravelDataIO;
 import playground.clruch.utils.GlobalAssert;
 import playground.clruch.utils.SafeConfig;
 import playground.sebhoerl.avtaxi.config.AVDispatcherConfig;
@@ -93,21 +95,24 @@ public class MultiDispatcher extends AbstractMultiDispatcher {
             int numberOfDispatchers = safeConfig.getInteger("numberOfDispatchers", 0);
             GlobalAssert.that(numberOfDispatchers != 0);
 
-            try {
-                final File virtualnetworkDir = new File(safeConfig.getStringStrict("virtualNetworkDirectory"));
-                GlobalAssert.that(virtualnetworkDir.isDirectory());
-                {
-                    final File virtualnetworkFile = new File(virtualnetworkDir, "virtualNetwork");
-                    System.out.println("" + virtualnetworkFile.getAbsoluteFile());
-                    try {
-                        virtualNetwork = VirtualNetworkIO.fromByte(network, virtualnetworkFile);
-                    } catch (ClassNotFoundException | DataFormatException | IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
+            final File virtualnetworkDir = new File(config.getParams().get("virtualNetworkDirectory"));
+            GlobalAssert.that(virtualnetworkDir.isDirectory());
+            {
+                final File virtualnetworkFile = new File(virtualnetworkDir, "virtualNetwork");
+                GlobalAssert.that(virtualnetworkFile.isFile());
+                try {
+                    virtualNetwork = VirtualNetworkIO.fromByte(network, virtualnetworkFile);
+                } catch (ClassNotFoundException | DataFormatException | IOException e) {
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                System.out.println("ATTENTION: No virtual network found!");
+            }
+
+            TravelData travelData = null;
+            try {
+                travelData = TravelDataIO.fromByte(network, virtualNetwork, new File(virtualnetworkDir, "travelData"));
+            } catch (ClassNotFoundException | DataFormatException | IOException e) {
+                System.out.println("problem reading travelData");
+                e.printStackTrace();
             }
 
             final HashSet<AVDispatcher> dispatchers = new HashSet<>();
@@ -125,7 +130,7 @@ public class MultiDispatcher extends AbstractMultiDispatcher {
 
                 dispatchers.add(MultiDispatcherUtils.newDispatcher(dispatcherName, config, tempGeneratorConfig, //
                         travelTime, router, eventsManager, network, abstractRequestSelector, abstractVirtualNodeDest, //
-                        abstractVehicleDestMatcher, virtualNetwork));
+                        abstractVehicleDestMatcher, virtualNetwork, travelData));
             }
             GlobalAssert.that(!dispatchers.isEmpty());
             if (totalFleetSize != generatorConfig.getNumberOfVehicles()) System.out.println( //

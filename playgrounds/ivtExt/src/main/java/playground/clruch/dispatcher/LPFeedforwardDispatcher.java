@@ -11,8 +11,10 @@ package playground.clruch.dispatcher;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
@@ -33,6 +35,8 @@ import ch.ethz.idsc.tensor.alg.Array;
 import ch.ethz.idsc.tensor.alg.Dimensions;
 import ch.ethz.idsc.tensor.red.Total;
 import playground.clruch.dispatcher.core.PartitionedDispatcher;
+import playground.clruch.dispatcher.core.RebalancingDispatcher;
+import playground.clruch.dispatcher.core.UniversalDispatcher;
 import playground.clruch.dispatcher.core.VehicleLinkPair;
 import playground.clruch.dispatcher.utils.AbstractRequestSelector;
 import playground.clruch.dispatcher.utils.AbstractVehicleDestMatcher;
@@ -58,6 +62,7 @@ import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 
 public class LPFeedforwardDispatcher extends PartitionedDispatcher {
     public final int redispatchPeriod;
+    public final int rebalancingPeriod;
     final AbstractVirtualNodeDest virtualNodeDest;
     final AbstractRequestSelector requestSelector;
     final AbstractVehicleDestMatcher vehicleDestMatcher;
@@ -89,6 +94,7 @@ public class LPFeedforwardDispatcher extends PartitionedDispatcher {
         this.vehicleDestMatcher = abstractVehicleDestMatcher;
         numberOfAVs = (int) generatorConfig.getNumberOfVehicles();
         redispatchPeriod = Integer.parseInt(config.getParams().get("redispatchPeriod"));
+        rebalancingPeriod = Integer.parseInt(config.getParams().get("rebalancingPeriod"));
         travelData = arrivalInformationIn;
         nVNodes = virtualNetwork.getvNodesCount();
         nVLinks = virtualNetwork.getvLinksCount();
@@ -102,18 +108,33 @@ public class LPFeedforwardDispatcher extends PartitionedDispatcher {
         // PART 0: match vehicles at a customer link
         new InOrderOfArrivalMatcher(this::setAcceptRequest) //
                 .match(getStayVehicles(), getAVRequestsAtLinks());
+
         final long round_now = Math.round(now);
 
+        if (round_now % rebalancingPeriod == 0) {
+            rebalanceStep(round_now, //
+                    this, //
+                    getVirtualNodeDivertableNotRebalancingVehicles());
+        }
 
-        // permanently rebalance vehicles according to the rates output by the LP
         if (round_now % redispatchPeriod == 0) {
-            rebalancingRate = travelData.getAlphaijforTime((int)round_now);
-            
-            // update rebalance count using current rate
-            rebalanceCount = rebalanceCount.add(rebalancingRate.multiply(RealScalar.of(redispatchPeriod)));
+            redispatchStep(round_now, this,
+                    () -> getVirtualNodeDivertableNotRebalancingVehicles().values() //
+                            .stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
+        }
+    }
 
-            {
-                List<Integer> dims =Dimensions.of(rebalanceCount); 
+    public void rebalanceStep(final long round_now, //
+                              RebalancingDispatcher dispatcher, //
+                              Map<VirtualNode, List<VehicleLinkPair>> availableVehicles) {
+        // permanently rebalance vehicles according to the rates output by the LP
+        rebalancingRate = travelData.getAlphaijforTime((int)round_now);
+
+        // update rebalance count using current rate
+        rebalanceCount = rebalanceCount.add(rebalancingRate.multiply(RealScalar.of(redispatchPeriod)));
+
+        {
+            List<Integer> dims = Dimensions.of(rebalanceCount);
             // redispatch values > 0 and remove from rebalanceCount
             for (int i = 0; i < dims.get(0); ++i) {
                 for (int j = 0; j < dims.get(1); ++j) {
@@ -125,48 +146,46 @@ public class LPFeedforwardDispatcher extends PartitionedDispatcher {
                     }
                 }
             }
-            }
-
-            // ensure that not more vehicles are sent away than available
-            Map<VirtualNode, List<VehicleLinkPair>> availableVehicles = getVirtualNodeDivertableNotRebalancingVehicles();
-            Tensor feasibleRebalanceCount = FeasibleRebalanceCreator.returnFeasibleRebalance(rebalanceCountInteger.unmodifiable(), availableVehicles);
-            total_rebalanceCount += (Integer) ((Scalar) Total.of(Tensor.of(feasibleRebalanceCount.flatten(-1)))).number();
-
-            // generate routing instructions for rebalancing vehicles
-            Map<VirtualNode, List<Link>> destinationLinks = createvNodeLinksMap();
-
-            // fill rebalancing destinations
-            for (int i = 0; i < nVLinks; ++i) {
-                VirtualLink virtualLink = this.virtualNetwork.getVirtualLink(i);
-                VirtualNode toNode = virtualLink.getTo();
-                VirtualNode fromNode = virtualLink.getFrom();
-                int numreb = (Integer) (feasibleRebalanceCount.Get(fromNode.index, toNode.index)).number();
-                List<Link> rebalanceTargets = virtualNodeDest.selectLinkSet(toNode, numreb);
-                destinationLinks.get(fromNode).addAll(rebalanceTargets);
-            }
-
-            // consistency check: rebalancing destination links must not exceed
-            // available vehicles in virtual node
-            Map<VirtualNode, List<VehicleLinkPair>> finalAvailableVehicles = availableVehicles;
-            GlobalAssert.that(!virtualNetwork.getVirtualNodes().stream()
-                    .filter(v -> finalAvailableVehicles.get(v).size() < destinationLinks.get(v).size()).findAny().isPresent());
-
-            // send rebalancing vehicles using the setVehicleRebalance command
-            for (VirtualNode virtualNode : destinationLinks.keySet()) {
-                Map<VehicleLinkPair, Link> rebalanceMatching = vehicleDestMatcher.match(availableVehicles.get(virtualNode),
-                        destinationLinks.get(virtualNode));
-                rebalanceMatching.keySet().forEach(v -> setVehicleRebalance(v, rebalanceMatching.get(v)));
-            }
-
-            // reset vector
-            rebalanceCountInteger = Array.zeros(nVNodes, nVNodes);
-//                    Tensors.matrix((i, j) -> RealScalar.of(0.0), nVNodes, nVNodes);
         }
 
+        // ensure that not more vehicles are sent away than available
+        Tensor feasibleRebalanceCount = FeasibleRebalanceCreator.returnFeasibleRebalance(rebalanceCountInteger.unmodifiable(), availableVehicles);
+        total_rebalanceCount += (Integer) ((Scalar) Total.of(Tensor.of(feasibleRebalanceCount.flatten(-1)))).number();
+
+        // generate routing instructions for rebalancing vehicles
+        Map<VirtualNode, List<Link>> destinationLinks = createvNodeLinksMap();
+
+        // fill rebalancing destinations
+        for (int i = 0; i < nVLinks; ++i) {
+            VirtualLink virtualLink = this.virtualNetwork.getVirtualLink(i);
+            VirtualNode toNode = virtualLink.getTo();
+            VirtualNode fromNode = virtualLink.getFrom();
+            int numreb = (Integer) (feasibleRebalanceCount.Get(fromNode.index, toNode.index)).number();
+            List<Link> rebalanceTargets = virtualNodeDest.selectLinkSet(toNode, numreb);
+            destinationLinks.get(fromNode).addAll(rebalanceTargets);
+        }
+
+        // consistency check: rebalancing destination links must not exceed
+        // available vehicles in virtual node
+        Map<VirtualNode, List<VehicleLinkPair>> finalAvailableVehicles = availableVehicles;
+        GlobalAssert.that(!virtualNetwork.getVirtualNodes().stream()
+                .filter(v -> finalAvailableVehicles.get(v).size() < destinationLinks.get(v).size()).findAny().isPresent());
+
+        // send rebalancing vehicles using the setVehicleRebalance command
+        for (VirtualNode virtualNode : destinationLinks.keySet()) {
+            Map<VehicleLinkPair, Link> rebalanceMatching = vehicleDestMatcher.match(availableVehicles.get(virtualNode),
+                    destinationLinks.get(virtualNode));
+            rebalanceMatching.keySet().forEach(v -> setVehicleRebalance(dispatcher, v, rebalanceMatching.get(v)));
+        }
+
+        // reset vector
+        rebalanceCountInteger = Array.zeros(nVNodes, nVNodes);
+//                    Tensors.matrix((i, j) -> RealScalar.of(0.0), nVNodes, nVNodes);
+    }
+
+    public void redispatchStep(long round_now, UniversalDispatcher dispatcher, Supplier<Collection<VehicleLinkPair>> supplier) {
         // assign destinations to vehicles using bipartite matching
-        printVals = HungarianUtils.globalBipartiteMatching(this,
-                () -> getVirtualNodeDivertableNotRebalancingVehicles().values() //
-                .stream().flatMap(v -> v.stream()).collect(Collectors.toList()));
+        printVals = HungarianUtils.globalBipartiteMatching(dispatcher, supplier);
     }
 
     @Override
