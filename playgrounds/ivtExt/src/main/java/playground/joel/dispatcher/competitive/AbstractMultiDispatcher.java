@@ -113,7 +113,6 @@ public abstract class AbstractMultiDispatcher extends PartitionedDispatcher {
         for (int i = 0; i < returnMap.size(); i++) {
             List<VehicleLinkPair> list = availableVehicles.get(vNodes.get(i)).stream(). //
                     filter(vlp -> filterCorrect(vlp.avVehicle, dispatcher)).collect(Collectors.toList());
-            // list.forEach(vlp -> System.out.println("added vehicle " + getVehicleIndex(vlp.avVehicle) + " to rebalancable vehicles for dispatcher " + dispatcher));
             returnMap.put(vNodes.get(i), list);
         }
         GlobalAssert.that(!returnMap.isEmpty());

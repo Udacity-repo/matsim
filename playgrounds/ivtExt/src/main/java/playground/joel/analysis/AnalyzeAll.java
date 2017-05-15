@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import ch.ethz.idsc.tensor.io.Get;
 import org.matsim.api.core.v01.network.Network;
 import ch.ethz.idsc.tensor.Tensor;
 import ch.ethz.idsc.tensor.alg.Dimensions;
@@ -156,6 +157,8 @@ public class AnalyzeAll {
                         lowerBound, lowerBound + AnalysisUtils.getGroupSize(i), //
                         requestVehicleIndices, vehicleGroupMap);
                 lowerBound += AnalysisUtils.getGroupSize(i);
+                System.out.println("Fleet " + i + " made in total " + Get.of(TRIPCOUNTERFILE).get(i) + //
+                        " trips with customers");
             }
             // check that all vehicles have been looked at
             if (lowerBound != AnalysisUtils.getNumVehicles(storageSupplier))
