@@ -42,7 +42,7 @@ public abstract class AbstractMultiDispatcher extends PartitionedDispatcher {
     final Tensor fleetSize;
     final NavigableMap<Integer, Integer> groupBoundaries = new TreeMap<>();
     final int maxMatchNumber; // implementation may not use this
-    HashSet<AVDispatcher> dispatchers = new HashSet<>();
+    List<AVDispatcher> dispatchers = new ArrayList();
     HashMap<Integer, LPVehicleRebalancing> lpVehicleRebalancings = new HashMap<>();
     VehicleIntegerDatabase vehicleIntegerDatabase = new VehicleIntegerDatabase();
 
@@ -53,7 +53,7 @@ public abstract class AbstractMultiDispatcher extends PartitionedDispatcher {
                              EventsManager eventsManager, //
                              Network network, AbstractRequestSelector abstractRequestSelector, //
                              VirtualNetwork virtualNetwork, //
-                             HashSet<AVDispatcher> dispatchersIn) {
+                             List<AVDispatcher> dispatchersIn) {
         super(avDispatcherConfig, travelTime, parallelLeastCostPathCalculator, eventsManager, virtualNetwork);
         dispatchers = dispatchersIn;
         SafeConfig safeConfig = SafeConfig.wrap(avDispatcherConfig);
@@ -90,15 +90,14 @@ public abstract class AbstractMultiDispatcher extends PartitionedDispatcher {
 
     public Supplier<Collection<VehicleLinkPair>> supplier(int dispatcher) {
         Supplier<Collection<VehicleLinkPair>> supplier = () -> getDivertableVehicles().stream() //
-                .filter(vlp -> groupBoundaries.lowerEntry(getVehicleIndex(vlp.avVehicle) + 1).getValue() == dispatcher) //
-                .collect(Collectors.toList());
+                .filter(vlp -> filterCorrect(vlp.avVehicle, dispatcher)).collect(Collectors.toList());
         return supplier;
     }
 
     public Supplier<Collection<VehicleLinkPair>> virtualNotRebalancingSupplier(int dispatcher) {
         Supplier<Collection<VehicleLinkPair>> supplier = () -> getVirtualNodeDivertableNotRebalancingVehicles() //
-                .values().stream().flatMap(v -> v.stream().filter(vlp -> groupBoundaries.lowerEntry( //
-                        getVehicleIndex(vlp.avVehicle) + 1).getValue() == dispatcher)).collect(Collectors.toList());
+                .values().stream().flatMap(v -> v.stream().filter(vlp -> filterCorrect(vlp.avVehicle, dispatcher))). //
+                collect(Collectors.toList());
         return supplier;
     }
 
@@ -113,8 +112,8 @@ public abstract class AbstractMultiDispatcher extends PartitionedDispatcher {
         List<VirtualNode> vNodes = getVirtualNodeDivertableNotRebalancingVehicles().keySet().stream().collect(Collectors.toList());
         for (int i = 0; i < returnMap.size(); i++) {
             List<VehicleLinkPair> list = availableVehicles.get(vNodes.get(i)).stream(). //
-                    filter(vlp -> groupBoundaries.lowerEntry(getVehicleIndex(vlp.avVehicle) + 1). //
-                    getValue() == dispatcher).collect(Collectors.toList());
+                    filter(vlp -> filterCorrect(vlp.avVehicle, dispatcher)).collect(Collectors.toList());
+            // list.forEach(vlp -> System.out.println("added vehicle " + getVehicleIndex(vlp.avVehicle) + " to rebalancable vehicles for dispatcher " + dispatcher));
             returnMap.put(vNodes.get(i), list);
         }
         GlobalAssert.that(!returnMap.isEmpty());
@@ -132,8 +131,8 @@ public abstract class AbstractMultiDispatcher extends PartitionedDispatcher {
             returnMap.put(virtualNode, new HashSet<>());
         }
         final Map<AVVehicle, Link> rebalancingVehicles = getRebalancingVehicles().entrySet().stream(). //
-                filter(vl -> groupBoundaries.lowerEntry(getVehicleIndex(vl.getKey()) + 1). //
-                getValue() == dispatcher).collect(Collectors.toMap(vl -> vl.getKey(), vl -> vl.getValue()));
+                filter(vl -> filterCorrect(vl.getKey(), dispatcher)). //
+                collect(Collectors.toMap(vl -> vl.getKey(), vl -> vl.getValue()));
         for (AVVehicle avVehicle : rebalancingVehicles.keySet()) {
             boolean successAdd = returnMap.get(virtualNetwork.getVirtualNode(rebalancingVehicles.get(avVehicle))).add(avVehicle);
             GlobalAssert.that(successAdd);
@@ -145,14 +144,21 @@ public abstract class AbstractMultiDispatcher extends PartitionedDispatcher {
 
     protected synchronized Map<VirtualNode, Set<AVVehicle>> getVirtualNodeArrivingWCustomerVehicles(int dispatcher) {
         final Map<AVVehicle, Link> customMap = getVehiclesWithCustomer().entrySet().stream(). //
-                filter(vl -> groupBoundaries.lowerEntry(getVehicleIndex(vl.getKey()) + 1). //
-                getValue() == dispatcher).collect(Collectors.toMap(vl -> vl.getKey(), vl -> vl.getValue()));
+                filter(vl -> filterCorrect(vl.getKey(), dispatcher)). //
+                collect(Collectors.toMap(vl -> vl.getKey(), vl -> vl.getValue()));
         final HashMap<VirtualNode, Set<AVVehicle>> customVehiclesMap = new HashMap<>();
         for (VirtualNode virtualNode : virtualNetwork.getVirtualNodes())
             customVehiclesMap.put(virtualNode, new HashSet<>());
         customMap.entrySet().stream() //
                 .forEach(e -> customVehiclesMap.get(virtualNetwork.getVirtualNode(e.getValue())).add(e.getKey()));
         return customVehiclesMap;
+    }
+
+    public boolean filterCorrect(AVVehicle avVehicle, int dispatcher) {
+        if (groupBoundaries.floorEntry(getVehicleIndex(avVehicle)).getValue() == dispatcher)
+            return true;
+        else
+            return false;
     }
 
     @Override

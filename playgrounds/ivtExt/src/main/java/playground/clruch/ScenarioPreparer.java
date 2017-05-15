@@ -43,7 +43,7 @@ public class ScenarioPreparer {
         final int dtTravelData = 500;
         final boolean completeGraph = false;
 
-        LocationSpec ls = LocationSpec.SIOUXFALLS_CITY;
+        LocationSpec ls = LocationSpec.ZURICH_CITY;
         
         final boolean populationeliminateFreight = true;
         final boolean populationchangeModeToAV = true;

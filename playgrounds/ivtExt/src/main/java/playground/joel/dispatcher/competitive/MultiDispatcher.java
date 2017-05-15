@@ -32,7 +32,7 @@ public class MultiDispatcher extends AbstractMultiDispatcher {
 
     private final int dispatchPeriod;
     private final int rebalancingPeriod;
-    private HashSet<AVDispatcher> dispatchers = new HashSet<>();
+    private List<AVDispatcher> dispatchers = new ArrayList();
     HashMap<Integer, LPVehicleRebalancing> lpVehicleRebalancings = new HashMap<>();
 
     private MultiDispatcher( //
@@ -42,7 +42,7 @@ public class MultiDispatcher extends AbstractMultiDispatcher {
                              EventsManager eventsManager, //
                              Network network, AbstractRequestSelector abstractRequestSelector, //
                              VirtualNetwork virtualNetwork, //
-                             HashSet<AVDispatcher> dispatchersIn) {
+                             List<AVDispatcher> dispatchersIn) {
         super(avDispatcherConfig, travelTime, parallelLeastCostPathCalculator, eventsManager, network, //
                 abstractRequestSelector, virtualNetwork, dispatchersIn);
         dispatchPeriod = super.dispatchPeriod;
@@ -115,7 +115,7 @@ public class MultiDispatcher extends AbstractMultiDispatcher {
                 e.printStackTrace();
             }
 
-            final HashSet<AVDispatcher> dispatchers = new HashSet<>();
+            final List<AVDispatcher> dispatchers = new ArrayList();
             int totalFleetSize = 0;
             for (int dispatcher = 0; dispatcher < numberOfDispatchers; ++dispatcher) {
                 String dispatcherName = safeConfig.getStringStrict("dispatcher" + dispatcher);

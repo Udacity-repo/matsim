@@ -7,7 +7,6 @@ import playground.clruch.dispatcher.EdgyDispatcher;
 import playground.clruch.dispatcher.HungarianDispatcher;
 import playground.clruch.dispatcher.LPFeedbackLIPDispatcher;
 import playground.clruch.dispatcher.LPFeedforwardDispatcher;
-import playground.clruch.dispatcher.core.UniversalDispatcher;
 import playground.clruch.dispatcher.utils.*;
 import playground.clruch.netdata.VirtualNetwork;
 import playground.clruch.traveldata.TravelData;
@@ -18,28 +17,26 @@ import playground.sebhoerl.avtaxi.config.AVGeneratorConfig;
 import playground.sebhoerl.avtaxi.dispatcher.AVDispatcher;
 import playground.sebhoerl.plcpc.ParallelLeastCostPathCalculator;
 
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by Joel on 04.05.2017.
  */
 public abstract class MultiDispatcherUtils {
 
-    public static void rebalanceStep(MultiDispatcher multi, double now, long round_now, HashSet<AVDispatcher> dispatchers) {
-        Iterator<AVDispatcher> dispatcher = dispatchers.iterator();
-        Integer dispatcherNum = 0;
-        while(dispatcher.hasNext())
-        {
+    public static void rebalanceStep(MultiDispatcher multi, double now, long round_now, List<AVDispatcher> dispatchers) {
+        for(int dispatcherNum = 0; dispatcherNum < dispatchers.size(); dispatcherNum++) {
             boolean knownDispatcher = false;
-            AVDispatcher current = dispatcher.next();
+            AVDispatcher current = dispatchers.get(dispatcherNum);
             if (current instanceof HungarianDispatcher) {
+                // System.out.println("triggered NO rebalance for Hungarian dispatcher " + dispatcherNum);
                 knownDispatcher = true;
             }
             if (current instanceof EdgyDispatcher) {
                 knownDispatcher = true;
             }
             if(current instanceof LPFeedbackLIPDispatcher) {
+                //System.out.println("triggered rebalance for LPFedback dispatcher " + dispatcherNum);
                 ((LPFeedbackLIPDispatcher) current).rebalanceStep(multi, //
                         multi.getVirtualNodeDivertableNotRebalancingVehicles(dispatcherNum), //
                         multi.getVirtualNodeRequests(), //
@@ -49,6 +46,7 @@ public abstract class MultiDispatcherUtils {
                 knownDispatcher = true;
             }
             if(current instanceof LPFeedforwardDispatcher) {
+                //System.out.println("triggered rebalance for Feedforward dispatcher " + dispatcherNum);
                 ((LPFeedforwardDispatcher) current).rebalanceStep(round_now, multi, //
                         multi.getVirtualNodeDivertableNotRebalancingVehicles(dispatcherNum));
                 knownDispatcher = true;
@@ -60,17 +58,13 @@ public abstract class MultiDispatcherUtils {
             }
             */
             GlobalAssert.that(knownDispatcher);
-            dispatcherNum++;
         }
     }
 
-    public static void redispatchStep(MultiDispatcher multi, double now, long round_now, HashSet<AVDispatcher> dispatchers) {
-        Iterator<AVDispatcher> dispatcher = dispatchers.iterator();
-        Integer dispatcherNum = 0;
-        while(dispatcher.hasNext())
-        {
+    public static void redispatchStep(MultiDispatcher multi, double now, long round_now, List<AVDispatcher> dispatchers) {
+        for(int dispatcherNum = 0; dispatcherNum < dispatchers.size(); dispatcherNum++) {
             boolean knownDispatcher = false;
-            AVDispatcher current = dispatcher.next();
+            AVDispatcher current = dispatchers.get(dispatcherNum);
             if (current instanceof HungarianDispatcher) {
                 ((HungarianDispatcher) current).redispatchStep(round_now, multi, multi.supplier(dispatcherNum));
                 knownDispatcher = true;
@@ -96,17 +90,15 @@ public abstract class MultiDispatcherUtils {
             }
             */
             GlobalAssert.that(knownDispatcher);
-            dispatcherNum++;
         }
     }
 
     // TODO: needs to be fixed if in use
-    public static String getInfoLine(HashSet<AVDispatcher> dispatchers) {
+    public static String getInfoLine(List<AVDispatcher> dispatchers) {
         String infoLine = "";
-        Iterator<AVDispatcher> dispatcher = dispatchers.iterator();
-        while (dispatcher.hasNext()) {
+        for(int dispatcherNum = 0; dispatcherNum < dispatchers.size(); dispatcherNum++) {
             boolean knownDispatcher = false;
-            AVDispatcher current = dispatcher.next();
+            AVDispatcher current = dispatchers.get(dispatcherNum);
             if(current instanceof HungarianDispatcher) {
                 infoLine = ((HungarianDispatcher) current).getInfoLine();
                 knownDispatcher = true;
@@ -162,7 +154,6 @@ public abstract class MultiDispatcherUtils {
                     abstractVirtualNodeDest, abstractRequestSelector, abstractVehicleDestMatcher, travelData);
                 break;
             /* TODO: adapt other dispatchers
-
             case "NewSingleHeuristicDispatcher": dispatcher = new NewSingleHeuristicDispatcher(avDispatcherConfig, //
                     travelTime, parallelLeastCostPathCalculator, eventsManager, network, abstractRequestSelector);
                 break;
