@@ -56,9 +56,7 @@ public class HungarianDispatcher extends UniversalDispatcher {
     }
 
     public void redispatchStep(long round_now, UniversalDispatcher dispatcher, Supplier<Collection<VehicleLinkPair>> supplier) {
-        if (round_now == 11890) {
-            System.out.println("arrived at problem");
-        }
+
         printVals = HungarianUtils.globalBipartiteMatching(dispatcher, supplier);
     }
 

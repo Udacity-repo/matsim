@@ -21,7 +21,7 @@ import playground.clruch.utils.GlobalAssert;
  */
 public class DiagramCreator {
 
-    public static final int filterSize = 30;
+    public static final int filterSize = 120;
 
     static Second toTime(double time) {
         int days = (int) (time / 86400) + 1;
