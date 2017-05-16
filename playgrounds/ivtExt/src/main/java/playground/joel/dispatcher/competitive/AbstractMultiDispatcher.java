@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * Created by Joel on 10.05.2017.
  */
 public abstract class AbstractMultiDispatcher extends PartitionedDispatcher {
-    public static final File GROUPSIZEFILE =new File("output/groupSize.mdisp.txt");
+    public static final File GROUPSIZEFILE = new File("output/groupSize.mdisp.txt");
 
     final int dispatchPeriod;
     final int rebalancingPeriod;
