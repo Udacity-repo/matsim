@@ -84,6 +84,7 @@ public abstract class UniversalBindingDispatcher extends AbstractUniversalDispat
 
         assignDirective(avVehicle, new AcceptRequestDirective( //
                 avVehicle, avRequest, futurePathContainer, getTimeNow(), dropoffDurationPerStop));
+        addDispatchEventAcceptRequest(avVehicle, avRequest);
 
         Link returnVal = vehiclesWithCustomer.put(avVehicle, avRequest.getToLink());
         GlobalAssert.that(returnVal == null);
