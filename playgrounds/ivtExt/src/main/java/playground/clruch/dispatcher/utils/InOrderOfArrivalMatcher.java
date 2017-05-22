@@ -1,8 +1,11 @@
 package playground.clruch.dispatcher.utils;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -42,8 +45,9 @@ public class InOrderOfArrivalMatcher extends AbstractVehicleRequestMatcher {
             if (stayVehicles.containsKey(link)) {
                 Iterator<AVRequest> requestIterator = entry.getValue().iterator();
                 Queue<AVVehicle> vehicleQueue = stayVehicles.get(link);
-                while (!vehicleQueue.isEmpty() && requestIterator.hasNext()) {
-                    biConsumer.accept(vehicleQueue.poll(), requestIterator.next());
+                Queue<AVVehicle> queueShuffled = shuffleMyQueue(vehicleQueue);
+                while (!queueShuffled.isEmpty() && requestIterator.hasNext()) {
+                    biConsumer.accept(queueShuffled.poll(), requestIterator.next());
                     ++num_matchedRequests;
                 }
             }
@@ -76,5 +80,14 @@ public class InOrderOfArrivalMatcher extends AbstractVehicleRequestMatcher {
         }
         return num_matchedRequests;
     }
+    
+    
+    private Queue<AVVehicle> shuffleMyQueue(Queue<AVVehicle> vehicleQueue){
+        List<AVVehicle> avList = vehicleQueue.stream().collect(Collectors.toList());
+        Collections.shuffle(avList);
+        Queue<AVVehicle> returnQueue = new LinkedList<>();
+        avList.stream().forEach(v->returnQueue.add(v));
+        return returnQueue;        
+    };
 
 }
