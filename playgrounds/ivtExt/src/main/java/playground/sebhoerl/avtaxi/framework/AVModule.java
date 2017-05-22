@@ -34,6 +34,7 @@ import playground.fseccamo.dispatcher.MPCDispatcher_1;
 import playground.joel.dispatcher.competitive.MultiDispatcher;
 import playground.joel.dispatcher.competitive.MultiHungarianDispatcher;
 import playground.joel.dispatcher.single_heuristic.NewSingleHeuristicDispatcher; // TODO: delete this or the other
+import playground.joel.helpers.RandomDensityGenerator;
 import playground.maalbert.dispatcher.DFRDispatcher;
 import playground.sebhoerl.avtaxi.config.AVConfig;
 import playground.sebhoerl.avtaxi.config.AVConfigReader;
@@ -150,6 +151,9 @@ public class AVModule extends AbstractModule {
     private void configureGeneratorStrategies() {
         bind(PopulationDensityGenerator.Factory.class);
         AVUtils.bindGeneratorFactory(binder(), "PopulationDensity").to(PopulationDensityGenerator.Factory.class);
+        
+        bind(RandomDensityGenerator.Factory.class);
+        AVUtils.bindGeneratorFactory(binder(), "RandomDensity").to(RandomDensityGenerator.Factory.class);
     }
 
     @Provides
